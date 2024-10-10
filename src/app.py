@@ -7,6 +7,8 @@ import pandas as pd
 import os
 from openpyxl import load_workbook
 
+from data_manager import add_tournament, add_head2head
+
 # Function to fetch tournament data and store it in a JSON file
 def fetch_tournament(slug, eventSlug):
     # Set up the GraphQL client
@@ -109,110 +111,18 @@ if __name__ == "__main__":
 
     print("Tournament data has been fetched and stored in tournament_data.json")
 
-    # Set up dataframes for tournament and head2head data
-    tournament_df = None
-    head2head_df = None
+    tournament_df_old = None
+    head2head_df_old = None
     
     # If excel already created, add new tournament to data
     if os.path.exists('ranking_data.xlsx'):
-      tournament_df = pd.read_excel('ranking_data.xlsx', sheet_name='Placements')
-      column_index = 1
-      # Check that we are not repeating a tournament data
-      while column_index < tournament_df.shape[1]:
-        column_data = tournament_df.iloc[:, column_index]
-        if column_data.name == final_data['tournament']['name']:
-          print("Tournament data already in excel")
-          sys.exit()
-        else:
-          column_index += 1    
-
-      # Get required data separately and create new column for tournament
-      players_column = tournament_df['Players']
-      tournament_name = final_data['tournament']['name']
-      entrants = final_data['tournament']['events'][0]['entrants']['nodes']
-      tournament_df[tournament_name] = None
-      
-      # Set placements for new players and players that already participated in previous tournaments
-      for entrant in entrants:
-        player_name = entrant['participants'][0]['gamerTag']            
-        player_idx = 0
-        # Append new player to the 'Players' column if it doesn't exist
-        if player_name not in players_column.values:
-          new_row = {'Players': player_name, tournament_name: entrant['standing']['placement']}
-          tournament_df.loc[len(tournament_df)] = new_row
-        else:
-          player_idx = players_column[players_column == player_name].index[0]
-          tournament_df.iloc[player_idx, column_index] = entrant['standing']['placement']   
-          
-      #Write excel sheet for head to heads
-      head2head_df = pd.read_excel('ranking_data.xlsx', sheet_name='Head-Head', index_col=0)
-      head2head_df = head2head_df.astype('object')
-      players_column = head2head_df.index
-      players_column = [s.lower() for s in players_column]
-         
-      # Check for new names first
-      print(head2head_df)
-      for entrant in entrants:
-        gamerTag = entrant['participants'][0]['gamerTag']
-        # If new player, add to table
-        if gamerTag.strip().lower() not in players_column:
-          head2head_df[gamerTag] = None
-          head2head_df.loc[gamerTag] = [None] * len(head2head_df.columns)
-          head2head_df.loc[gamerTag, gamerTag] = '-'
-          print(head2head_df)
-      head2head_df = head2head_df.infer_objects(copy=False).fillna(0)
-      
-      # Check matches now
-      for entrant in entrants:
-        gamerId = entrant['id']
-        gamerTag = entrant['participants'][0]['gamerTag']
-        
-        for set in entrant['paginatedSets']['nodes']:
-          # If player won set, mark head to head as win
-          if set['winnerId'] == gamerId:
-            player1name = set['slots'][0]['entrant']['participants'][0]['gamerTag']
-            player2name = set['slots'][1]['entrant']['participants'][0]['gamerTag']
-            rivalName = player1name if player1name != gamerTag else player2name
+      tournament_df_old = pd.read_excel('ranking_data.xlsx', sheet_name='Placements')
+      head2head_df_old = pd.read_excel('ranking_data.xlsx', sheet_name='Head-Head', index_col=0)
             
-            # Get player row and rival column and add
-            head2head_df.loc[gamerTag, rivalName] += 1 
-        
-    # If first time writing on excel
-    else:
-      # Write excel sheet for placements
-      tournament_name = final_data['tournament']['name']
-      entrants = final_data['tournament']['events'][0]['entrants']['nodes']
-      playerNames = [entrant['participants'][0]['gamerTag'] for entrant in entrants]
-      placements = [entrant['standing']['placement'] for entrant in entrants]
-      
-      # Create a dictionary for DataFrame
-      tournament_df = pd.DataFrame({'Players': playerNames, tournament_name: placements})
-      
-      #Write excel sheet for head to heads
-      head2head_df = pd.DataFrame(index=playerNames, columns=playerNames)
-      
-      # Fill diagonal with '-'
-      head2head_df = head2head_df.infer_objects(copy=False).fillna(0)
-      head2head_df = head2head_df.astype('object')
-      for player in playerNames:
-        head2head_df.loc[player, player] = '-'
-        print(head2head_df)
-        
-      # Check matches now
-      for entrant in entrants:
-        gamerId = entrant['id']
-        gamerTag = entrant['participants'][0]['gamerTag']
-        for set in entrant['paginatedSets']['nodes']:
-          
-          # If player won set, mark head to head as win
-          if set['winnerId'] == gamerId:
-            player1name = set['slots'][0]['entrant']['participants'][0]['gamerTag']
-            player2name = set['slots'][1]['entrant']['participants'][0]['gamerTag']
-            rivalName = player1name if player1name != gamerTag else player2name
-            
-            # Get player row and rival column and add
-            head2head_df.loc[gamerTag, rivalName] += 1
-            
+    # Create placement and head-head dataframes with new data
+    tournament_df = add_tournament(final_data, tournament_df_old)
+    head2head_df = add_head2head(final_data, head2head_df_old)
+    
     # Write the DataFrames to different sheets in an Excel file
     with pd.ExcelWriter('ranking_data.xlsx', engine='openpyxl', mode='w') as writer:
       tournament_df.to_excel(writer, sheet_name='Placements', index=False)
