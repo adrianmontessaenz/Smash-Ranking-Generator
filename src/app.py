@@ -142,8 +142,41 @@ if __name__ == "__main__":
           tournament_df.loc[len(tournament_df)] = new_row
         else:
           player_idx = players_column[players_column == player_name].index[0]
-          tournament_df.iloc[player_idx, column_index] = entrant['standing']['placement']    
+          tournament_df.iloc[player_idx, column_index] = entrant['standing']['placement']   
+          
+      #Write excel sheet for head to heads
+      head2head_df = pd.read_excel('ranking_data.xlsx', sheet_name='Head-Head', index_col=0)
+      head2head_df = head2head_df.astype('object')
+      players_column = head2head_df.index
+      players_column = [s.lower() for s in players_column]
+         
+      # Check for new names first
+      print(head2head_df)
+      for entrant in entrants:
+        gamerTag = entrant['participants'][0]['gamerTag']
+        # If new player, add to table
+        if gamerTag.strip().lower() not in players_column:
+          head2head_df[gamerTag] = None
+          head2head_df.loc[gamerTag] = [None] * len(head2head_df.columns)
+          head2head_df.loc[gamerTag, gamerTag] = '-'
+          print(head2head_df)
+      head2head_df = head2head_df.infer_objects(copy=False).fillna(0)
       
+      # Check matches now
+      for entrant in entrants:
+        gamerId = entrant['id']
+        gamerTag = entrant['participants'][0]['gamerTag']
+        
+        for set in entrant['paginatedSets']['nodes']:
+          # If player won set, mark head to head as win
+          if set['winnerId'] == gamerId:
+            player1name = set['slots'][0]['entrant']['participants'][0]['gamerTag']
+            player2name = set['slots'][1]['entrant']['participants'][0]['gamerTag']
+            rivalName = player1name if player1name != gamerTag else player2name
+            
+            # Get player row and rival column and add
+            head2head_df.loc[gamerTag, rivalName] += 1 
+        
     # If first time writing on excel
     else:
       # Write excel sheet for placements
@@ -151,18 +184,19 @@ if __name__ == "__main__":
       entrants = final_data['tournament']['events'][0]['entrants']['nodes']
       playerNames = [entrant['participants'][0]['gamerTag'] for entrant in entrants]
       placements = [entrant['standing']['placement'] for entrant in entrants]
-      index = ['Players', tournament_name]
       
       # Create a dictionary for DataFrame
       tournament_df = pd.DataFrame({'Players': playerNames, tournament_name: placements})
       
       #Write excel sheet for head to heads
       head2head_df = pd.DataFrame(index=playerNames, columns=playerNames)
-      head2head_df = head2head_df.fillna(0)
       
       # Fill diagonal with '-'
+      head2head_df = head2head_df.infer_objects(copy=False).fillna(0)
+      head2head_df = head2head_df.astype('object')
       for player in playerNames:
         head2head_df.loc[player, player] = '-'
+        print(head2head_df)
         
       # Check matches now
       for entrant in entrants:
@@ -180,19 +214,38 @@ if __name__ == "__main__":
             head2head_df.loc[gamerTag, rivalName] += 1
             
     # Write the DataFrames to different sheets in an Excel file
-    with pd.ExcelWriter('ranking_data.xlsx') as writer:
+    with pd.ExcelWriter('ranking_data.xlsx', engine='openpyxl', mode='w') as writer:
       tournament_df.to_excel(writer, sheet_name='Placements', index=False)
-      head2head_df.to_excel(writer, sheet_name='Head-Head', index=False)
+      head2head_df.to_excel(writer, sheet_name='Head-Head', index=True)
     
     # Decorate excel: Set width of columns to see tournament name correctly
     workbook = load_workbook('ranking_data.xlsx')
-    sheet = workbook.active
-    column_names = [cell.value for cell in sheet[1]]
     
-    for tmp in range(sheet.max_column):
-      letter = sheet.cell(row=1, column=tmp + 1).column_letter
-      sheet.column_dimensions[letter].width = len(column_names[tmp]) + 2
+    # Decorate sheet 1
+    placement_sheet = workbook['Placements']
+    column_names = [cell.value for cell in placement_sheet[1]]
+    
+    # Set width of columns
+    max_width = 0    
+    for tmp in range(1, placement_sheet.max_column):
+      letter = placement_sheet.cell(row=1, column=tmp + 1).column_letter
+      length = len(column_names[tmp]) + 4
+      placement_sheet.column_dimensions[letter].width = length
+      max_width = length if max_width < length + 2 else max_width
+    placement_sheet.column_dimensions['A'].width = max_width
       
+    # Decorate sheet 2
+    head2head_sheet = workbook['Head-Head'] 
+    column_names = [cell.value for cell in head2head_sheet[1]]
+    
+    # Set width of columns
+    for tmp in range(1, head2head_sheet.max_column):
+      letter = head2head_sheet.cell(row=1, column=tmp + 1).column_letter
+      length = len(column_names[tmp]) + 4
+      head2head_sheet.column_dimensions[letter].width = length
+      max_width = length if max_width < length + 2 else max_width
+    head2head_sheet.column_dimensions['A'].width = max_width
+    
     # Save the changes
     workbook.save('ranking_data.xlsx')
     workbook.close()

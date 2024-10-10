@@ -18,7 +18,7 @@ RUN apt-get update && apt-get install -y \
 RUN pip install --no-cache-dir --upgrade pip
 
 # Install Python dependencies from requirements.txt
-RUN pip install --no-cache-dir gql requests pandas openpyxl flask
+RUN pip install --no-cache-dir gql requests pandas openpyxl flask requests_toolbelt
 
 # Expose port 8000 for development (if running a web server, for example)
 EXPOSE 8000
