@@ -7,7 +7,7 @@ import pandas as pd
 import os
 from openpyxl import load_workbook
 
-from data_manager import add_tournament, add_head2head
+from data_manager import add_tournament, add_head2head, compute_ranking
 
 # Function to fetch tournament data and store it in a JSON file
 def fetch_tournament(slug, eventSlug):
@@ -95,9 +95,16 @@ def fetch_tournament(slug, eventSlug):
     return final_json
 
 if __name__ == "__main__":
+    # Check if compute was the given argument
+    if len(sys.argv) == 2:
+      if sys.argv[1] != 'compute':
+        print("Usage: python app.py <tournament_slug> <event_slug> <tournament_tier> or python app.py compute")
+      else:
+        compute_ranking()
+        sys.exit(1)
     # Check if a slug was provided as a command-line argument
-    if len(sys.argv) != 3:
-        print("Usage: python app.py <tournament_slug> <event_slug>")
+    elif len(sys.argv) != 4:
+        print("Usage: python app.py <tournament_slug> <event_slug> <tournament_tier> or python app.py compute")
         sys.exit(1)
 
     # Get tournament slug and retrieve needed data 
@@ -105,12 +112,25 @@ if __name__ == "__main__":
     event_slug = sys.argv[2]
     final_data = fetch_tournament(tournament_slug, event_slug)
     
+    json_data = {"tournaments": []}
+
+    if os.path.exists('tournament_data.json'):
+      with open('tournament_data.json', 'r') as file:
+        json_data = json.load(file)
+
+    tmp_data = {
+    "name": final_data['tournament']['name'],
+    "entrants": final_data['tournament']['events'][0]['entrants']['pageInfo']['total'],
+    "tier": sys.argv[3]
+    }
+    
+    json_data['tournaments'].append(tmp_data)
     # Save data to a JSON file
     with open('tournament_data.json', 'w') as json_file:
-        json.dump(final_data, json_file, indent=4)
+        json.dump(json_data, json_file, indent=4)
 
     print("Tournament data has been fetched and stored in tournament_data.json")
-
+    
     tournament_df_old = None
     head2head_df_old = None
     

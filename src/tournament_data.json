@@ -1,0 +1,19 @@
+{
+    "tournaments": [
+        {
+            "name": "Euskalkong #3",
+            "entrants": 54,
+            "tier": "B"
+        },
+        {
+            "name": "Euskalkong #4",
+            "entrants": 76,
+            "tier": "B"
+        },
+        {
+            "name": "Kirby's Smassh Attack #6",
+            "entrants": 42,
+            "tier": "B"
+        }
+    ]
+}

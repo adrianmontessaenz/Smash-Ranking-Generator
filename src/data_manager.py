@@ -1,5 +1,7 @@
 import pandas as pd
 import json
+import os
+import sys
 
 def add_tournament(json_data, tournament_df = None):
     # Write excel sheet for placements
@@ -30,7 +32,6 @@ def add_head2head(json_data, head2head_df = None):
         df = df.astype('object')
         for player in playerNames:
           df.loc[player, player] = '-'
-          print(df)
     
     # If file, add new players to table
     else:
@@ -40,7 +41,6 @@ def add_head2head(json_data, head2head_df = None):
         players_column = [s.lower() for s in players_column]
            
         # Check for new names first
-        print(df)
         for entrant in entrants:
           gamerTag = entrant['participants'][0]['gamerTag']
           # If new player, add to table
@@ -48,7 +48,6 @@ def add_head2head(json_data, head2head_df = None):
             df[gamerTag] = None
             df.loc[gamerTag] = [None] * len(df.columns)
             df.loc[gamerTag, gamerTag] = '-'
-            print(df)
         df = df.infer_objects(copy=False).fillna(0)
         
     # Check matches
@@ -66,3 +65,30 @@ def add_head2head(json_data, head2head_df = None):
           # Get player row and rival column and add
           df.loc[gamerTag, rivalName] += 1
     return df
+
+def compute_ranking():
+    # Check if excel exists
+    if os.path.exists('ranking_data.xlsx') is False:
+        print("First create excel with data, then compute ranking")
+        sys.exit(1)
+    elif os.path.exists('tournament_data.json') is False:
+        print("Create json with tournament values")
+        sys.exit(1)
+        
+    # Get data from tournaments
+    tournament_df = pd.read_excel('ranking_data.xlsx', sheet_name='Placements', index_col=0)
+    head2head_df = pd.read_excel('ranking_data.xlsx', sheet_name='Head-Head', index_col=0)
+    
+    # Open and read the JSON file
+    json_data = None
+    with open('tournament_data.json', 'r') as file:
+        json_data = json.load(file)
+        
+    points_df = pd.DataFrame(columns=['Players', 'Scores'])
+    playerNames = tournament_df.index.tolist()
+    for player in playerNames:
+        final_score = 0
+        for column_idx in range(tournament_df.columns):
+            placement = tournament_df[player, column_idx]
+            if placement is None:
+                continue
