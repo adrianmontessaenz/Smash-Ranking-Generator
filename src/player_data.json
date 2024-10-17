@@ -183,6 +183,26 @@
     },
     "extra_ranking":
     {
+        "top1-5": 
+        {
+            "point_multiplier": 50,
+            "players":
+            [
+                {
+                    "name": "KID"
+                }
+            ]
+        },
+        "top6-10": 
+        {
+            "point_multiplier": 20,
+            "players":
+            [
+                {
+                    "name": "Tintin"
+                }
+            ]
+        },
         "top11-20": 
         {
             "point_multiplier": 10,
@@ -190,6 +210,27 @@
             [
                 {
                     "name": "Dasher"
+                },
+                {
+                    "name": "Oxyzz"
+                },
+                {
+                    "name": "Oxxyga"
+                },
+                {
+                    "name": "cherryo"
+                },
+                {
+                    "name": "Barloche"
+                },
+                {
+                    "name": "ZeroSkill"
+                },
+                {
+                    "name": "Que_ni_ni"
+                },
+                {
+                    "name": "Elfo"
                 }
             ]
         },
@@ -200,6 +241,15 @@
             [
                 {
                     "name": "Ivan du chit"
+                },
+                {
+                    "name": "Merredion"
+                },
+                {
+                    "name": "Coname"
+                },
+                {
+                    "name": "Astral"
                 }
             ]
         },

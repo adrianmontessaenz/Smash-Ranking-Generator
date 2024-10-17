@@ -5,9 +5,10 @@ import json
 import sys
 import pandas as pd
 import os
-from openpyxl import load_workbook
 
-from data_manager import add_tournament, add_head2head, compute_ranking
+from data_manager import add_tournament, add_head2head
+from ranking_manager import compute_ranking
+from decorate import decorate_excel
 
 # Function to fetch tournament data and store it in a JSON file
 def fetch_tournament(slug, eventSlug):
@@ -97,12 +98,15 @@ def fetch_tournament(slug, eventSlug):
 if __name__ == "__main__":
     # Check if compute was the given argument
     if len(sys.argv) == 2:
-      if sys.argv[1] != 'compute':
-        print("Usage: python app.py <tournament_slug> <event_slug> <tournament_tier> or python app.py compute")
-        sys.exit(1)
-      else:
+      if sys.argv[1] == 'compute':
         compute_ranking()
         sys.exit(0)
+      elif sys.argv[1] == 'decorate':
+        decorate_excel('ranking_data.xlsx')
+        sys.exit(0)
+      else:
+        print("Usage: python app.py <tournament_slug> <event_slug> <tournament_tier> or python app.py compute")
+        sys.exit(1)
     # Check if a slug was provided as a command-line argument
     elif len(sys.argv) != 4:
         print("Usage: python app.py <tournament_slug> <event_slug> <tournament_tier> or python app.py compute")
@@ -125,6 +129,9 @@ if __name__ == "__main__":
     "tier": sys.argv[3]
     }
     
+    if any(tournament['name'] == tmp_data['name'] for tournament in json_data['tournaments']):
+      print('Tournament already fetched')
+      sys.exit(0)
     json_data['tournaments'].append(tmp_data)
     
     tournament_df_old = None
@@ -143,46 +150,12 @@ if __name__ == "__main__":
     with pd.ExcelWriter('ranking_data.xlsx', engine='openpyxl', mode='w') as writer:
       tournament_df.to_excel(writer, sheet_name='Placements', index=False)
       head2head_df.to_excel(writer, sheet_name='Head-Head', index=True)
+    print("Tournament data has been stored in ranking_data.xlsx")
       
     # Save data to a JSON file
     with open('tournament_data.json', 'w') as json_file:
         json.dump(json_data, json_file, indent=4)
-
     print("Tournament data has been fetched and stored in tournament_data.json")
-    
-    # Decorate excel: Set width of columns to see tournament name correctly
-    workbook = load_workbook('ranking_data.xlsx')
-    
-    # Decorate sheet 1
-    placement_sheet = workbook['Placements']
-    column_names = [cell.value for cell in placement_sheet[1]]
-    
-    # Set width of columns
-    max_width = 0    
-    for tmp in range(1, placement_sheet.max_column):
-      letter = placement_sheet.cell(row=1, column=tmp + 1).column_letter
-      length = len(column_names[tmp]) + 4
-      placement_sheet.column_dimensions[letter].width = length
-      max_width = length if max_width < length + 2 else max_width
-    placement_sheet.column_dimensions['A'].width = max_width
-      
-    # Decorate sheet 2
-    head2head_sheet = workbook['Head-Head'] 
-    column_names = [cell.value for cell in head2head_sheet[1]]
-    
-    # Set width of columns
-    for tmp in range(1, head2head_sheet.max_column):
-      letter = head2head_sheet.cell(row=1, column=tmp + 1).column_letter
-      length = len(column_names[tmp]) + 4
-      head2head_sheet.column_dimensions[letter].width = length
-      max_width = length if max_width < length + 2 else max_width
-    head2head_sheet.column_dimensions['A'].width = max_width
-    
-    # Save the changes
-    workbook.save('ranking_data.xlsx')
-    workbook.close()
-    
-    print("Tournament data has been stored in ranking_data.xlsx")
 
 
 
