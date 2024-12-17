@@ -20,7 +20,7 @@ def fetch_tournament(slug, eventSlug):
     )
     client = Client(transport=transport, fetch_schema_from_transport=True)
 
-    # Query with entrants
+    # Query to get the entrants from event
     query = gql("""
     query getEventData($slug: String, $eventSlug: String) {
       tournament(slug: $slug) {
@@ -42,8 +42,7 @@ def fetch_tournament(slug, eventSlug):
     entrants_data = client.execute(query, variable_values={"slug": slug, "eventSlug": eventSlug})
     total_entrants = entrants_data['tournament']['events'][0]['entrants']['pageInfo']['total']
     
-
-    # Query to get standings
+    # Query to get event standings
     standings_query = gql("""
     query getStandings($slug: String!, $perPage: Int!, $page: Int! $eventSlug: String!) {
       tournament(slug: $slug) {
@@ -96,7 +95,7 @@ def fetch_tournament(slug, eventSlug):
     return final_json
 
 if __name__ == "__main__":
-    # Check if compute was the given argument
+    # Check which argument was given (compute, decorate or tournament)
     if len(sys.argv) == 2:
       if sys.argv[1] == 'compute':
         compute_ranking()
@@ -107,28 +106,31 @@ if __name__ == "__main__":
       else:
         print("Usage: python app.py <tournament_slug> <event_slug> <tournament_tier> or python app.py compute")
         sys.exit(1)
+        
     # Check if a slug was provided as a command-line argument
     elif len(sys.argv) != 4:
         print("Usage: python app.py <tournament_slug> <event_slug> <tournament_tier> or python app.py compute")
         sys.exit(1)
 
-    # Get tournament slug and retrieve needed data 
+    # Get tournament and event slug and retrieve needed data 
     tournament_slug = sys.argv[1]
     event_slug = sys.argv[2]
     final_data = fetch_tournament(tournament_slug, event_slug)
     
+    # Prepare json to store tournament data
     json_data = {"tournaments": []}
-
     if os.path.exists('tournament_data.json'):
       with open('tournament_data.json', 'r') as file:
         json_data = json.load(file)
 
+    # Create tournament data for json
     tmp_data = {
     "name": final_data['tournament']['name'],
     "entrants": final_data['tournament']['events'][0]['entrants']['pageInfo']['total'],
     "tier": sys.argv[3]
     }
     
+    # If it was already created then end, as we already retrieved that data. If changed, restart excel
     if any(tournament['name'] == tmp_data['name'] for tournament in json_data['tournaments']):
       print('Tournament already fetched')
       sys.exit(0)

@@ -4,13 +4,13 @@ import os
 import sys
 
 def add_tournament(json_data, tournament_df = None):
-    # Write excel sheet for placements
+    # Get player data from tournament
     tournament_name = json_data['tournament']['name']
     entrants = json_data['tournament']['events'][0]['entrants']['nodes']
     playerNames = [entrant['participants'][0]['gamerTag'] for entrant in entrants]
     placements = [int(entrant['standing']['placement']) for entrant in entrants]
     
-    # Create a dictionary for DataFrame
+    # Write column of placements (and if new, also the player column)
     df = pd.DataFrame({'Players': playerNames, tournament_name: placements})    
     if tournament_df is not None:
         df = pd.concat([df.set_index('Players'), tournament_df.set_index('Players')], axis=1)
