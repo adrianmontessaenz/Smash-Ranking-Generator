@@ -6,9 +6,9 @@
             "tier": "B"
         },
         {
-            "name": "Euskalkong #4",
-            "entrants": 76,
-            "tier": "B"
+            "name": "BORROKA FERIA 2024",
+            "entrants": 102,
+            "tier": "A"
         },
         {
             "name": "Kirby's Smassh Attack #6",
@@ -16,9 +16,34 @@
             "tier": "B"
         },
         {
-            "name": "BORROKA FERIA 2024",
-            "entrants": 102,
-            "tier": "A"
+            "name": "Euskalkong #4",
+            "entrants": 76,
+            "tier": "B"
+        },
+        {
+            "name": "Smushroom Kingdom: \u00a1Halloween Edition!",
+            "entrants": 80,
+            "tier": "B"
+        },
+        {
+            "name": "Smash Mansion 3",
+            "entrants": 33,
+            "tier": "C"
+        },
+        {
+            "name": "Vitoria Emblem: Radiant Dawn",
+            "entrants": 38,
+            "tier": "C"
+        },
+        {
+            "name": "Euskalkong #5 \u00a1Christmas Edition!",
+            "entrants": 48,
+            "tier": "B"
+        },
+        {
+            "name": "Kirby's Smassh Attack #7",
+            "entrants": 54,
+            "tier": "B"
         }
     ]
 }

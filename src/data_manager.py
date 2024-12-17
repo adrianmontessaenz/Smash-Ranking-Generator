@@ -39,13 +39,12 @@ def add_head2head(json_data, head2head_df = None):
         df = head2head_df
         df = df.astype('object')
         players_column = df.index
-        players_column = [s.lower() for s in players_column]
            
         # Check for new names first
         for entrant in entrants:
           gamerTag = entrant['participants'][0]['gamerTag']
           # If new player, add to table
-          if gamerTag.strip().lower() not in players_column:
+          if gamerTag not in players_column:
             df[gamerTag] = None
             df.loc[gamerTag] = [None] * len(df.columns)
             df.loc[gamerTag, gamerTag] = '-'
@@ -65,5 +64,7 @@ def add_head2head(json_data, head2head_df = None):
           
           # Get player row and rival column and add
           df.loc[gamerTag, rivalName] += 1
-          df.loc[rivalName, gamerTag] -= 1
+          
+          # Add this if you want to subtract points for losing
+          # df.loc[rivalName, gamerTag] -= 1
     return df
