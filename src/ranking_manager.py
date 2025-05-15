@@ -17,14 +17,14 @@ def get_player_points(json_data, playerName):
             if(scores[index] > 0):
                 break
         index += 1
-    return scores
-              
+    return scores    
+
 def compute_tournament_scores(tournament_df, json_tournament_data, tournament_points):
     # Create point dataframe
     playerNames = tournament_df.index.tolist()
     points_df = pd.DataFrame(index=playerNames, columns=tournament_df.columns)
     points_df.index.name = 'Players'
-    
+
     # Depending on placement, give each player specific amount of points
     points_df['Total Score'] = None
     points_df['Total Tournaments'] = None
@@ -44,29 +44,29 @@ def compute_tournament_scores(tournament_df, json_tournament_data, tournament_po
                 continue
             if json_tournament_data['tournaments'][json_idx]['tier'] == 'C':
                 if placement < 3:
-                    points = tournament_points[column_idx] * (1 + entrants - min(entrants, placement))/entrants
+                    points = tournament_points[column_idx] * (1 + entrants - min(entrants, placement))/entrants * 1.5
                 if placement < 8:
-                    points = tournament_points[column_idx] * (1 + entrants - min(entrants, placement))/entrants * 0.75
+                    points = tournament_points[column_idx] * (1 + entrants - min(entrants, placement))/entrants
                 else:
                     points = tournament_points[column_idx] * (1 + entrants - min(entrants, placement))/entrants * 0.5
             if json_tournament_data['tournaments'][json_idx]['tier'] == 'B':
                 if placement < 3:
-                    points = tournament_points[column_idx] * (1 + entrants - min(entrants, placement))/entrants * 1.25
+                    points = tournament_points[column_idx] * (1 + entrants - min(entrants, placement))/entrants * 2
                 if placement < 8:
-                    points = tournament_points[column_idx] * (1 + entrants - min(entrants, placement))/entrants
+                    points = tournament_points[column_idx] * (1 + entrants - min(entrants, placement))/entrants * 1.5
                 elif placement < 16:
-                    points = tournament_points[column_idx] * (1 + entrants - min(entrants, placement))/entrants * 0.75
+                    points = tournament_points[column_idx] * (1 + entrants - min(entrants, placement))/entrants
                 else:
                     points = tournament_points[column_idx] * (1 + entrants - min(entrants, placement))/entrants * 0.5
             elif json_tournament_data['tournaments'][json_idx]['tier'] == 'A':
                 if placement < 3:
-                    points = tournament_points[column_idx] * (1 + entrants - min(entrants, placement))/entrants * 1.5
+                    points = tournament_points[column_idx] * (1 + entrants - min(entrants, placement))/entrants * 4
                 if placement < 8:
-                    points = tournament_points[column_idx] * (1 + entrants - min(entrants, placement))/entrants * 1.25
+                    points = tournament_points[column_idx] * (1 + entrants - min(entrants, placement))/entrants * 2
                 elif placement < 16:
-                    points = tournament_points[column_idx] * (1 + entrants - min(entrants, placement))/entrants
+                    points = tournament_points[column_idx] * (1 + entrants - min(entrants, placement))/entrants * 1.5
                 elif placement < 32:
-                    points = tournament_points[column_idx] * (1 + entrants - min(entrants, placement))/entrants * 0.75
+                    points = tournament_points[column_idx] * (1 + entrants - min(entrants, placement))/entrants
                 else:
                     points = tournament_points[column_idx] * (1 + entrants - min(entrants, placement))/entrants * 0.5
                 
@@ -78,18 +78,19 @@ def compute_tournament_scores(tournament_df, json_tournament_data, tournament_po
         # Set scores on table
         points_df.loc[player, 'Total Score'] = final_score
         points_df.loc[player, 'Total Tournaments'] = total_tournaments
+    
     return points_df
     
-def compute_h2h_scores(tournament_df, points_df, head2head_df, json_player_data, player_ranking_scores):
+def compute_h2h_scores(points_df, head2head_df, json_player_data, player_ranking_scores):
     # Create dataframe
-    playerNames = tournament_df.index.tolist()
+    playerNames = points_df.index.tolist()
     
     # Create new head-2-head dataframe and fill diagonal with '-'
     h2h_points_df = pd.DataFrame(index=playerNames, columns=playerNames)
     h2h_points_df = h2h_points_df.infer_objects(copy=False).fillna(int(0))
     h2h_points_df = h2h_points_df.astype('object')
     for player in playerNames:
-      h2h_points_df.loc[player, player] = '-'
+        h2h_points_df.loc[player, player] = '-'
       
     # Loop for each player's wins
     for i in range(len(playerNames)):
@@ -99,61 +100,17 @@ def compute_h2h_scores(tournament_df, points_df, head2head_df, json_player_data,
             if player1 == player2:
                 continue
             
-            # If no h2h score or h2h already set, continue
-            if head2head_df.loc[player1, player2] == 0 and h2h_points_df.loc[player1, player2] != 0:
+            # If no h2h score between players, continue
+            if head2head_df.loc[player1, player2] == 0 and head2head_df.loc[player2, player1] == 0:
                 continue
             
-            # If h2h score, get each player's scores where both have participated
-            # First check how many tournaments have they participated on
-            p1_tournament_count = 0
-            p2_tournament_count = 0
-            for column_idx in range(len(tournament_df.columns)):
-                if tournament_df.loc[player1, tournament_df.columns[column_idx]] != 0: 
-                    p1_tournament_count += 1
-                if tournament_df.loc[player2, tournament_df.columns[column_idx]] != 0:
-                    p2_tournament_count += 1
+            # If h2h already exists, continue
+            if h2h_points_df.loc[player1, player2] != 0 or h2h_points_df.loc[player2, player1] != 0:
+                continue
             
-            # Create other counters to count how many tournaments have been registered for each player so far
-            p1_tournament_subcount = 0
-            p2_tournament_subcount = 0
-            
-            # Now get tournament scores. For the one with less or equal amount of tournaments, get all his tournaments.
-            player2_score = 0
-            player1_score = 0
-            for column_idx in range(len(tournament_df.columns)):
-                if tournament_df.loc[player1, tournament_df.columns[column_idx]] != 0 and tournament_df.loc[player2, tournament_df.columns[column_idx]] != 0:
-                    player1_score += points_df.loc[player1, tournament_df.columns[column_idx]]
-                    player2_score += points_df.loc[player2, tournament_df.columns[column_idx]]
-                    p2_tournament_subcount += 1
-                    p1_tournament_subcount += 1
-                elif p2_tournament_count <= p1_tournament_count and tournament_df.loc[player2, tournament_df.columns[column_idx]] != 0:
-                    player2_score += points_df.loc[player2, tournament_df.columns[column_idx]]
-                    p2_tournament_subcount += 1
-                elif p2_tournament_count >= p1_tournament_count and tournament_df.loc[player1, tournament_df.columns[column_idx]] != 0:
-                    player1_score += points_df.loc[player1, tournament_df.columns[column_idx]]
-                    p1_tournament_subcount += 1
-            
-            
-            # Now, for the one with more tournaments (If they don't have the same exact tournaments), get the ones with high scores that haven't been counted
-            if p2_tournament_subcount != p1_tournament_subcount:
-                tournaments_for_other_player = {}
-                for column_idx in range(len(tournament_df.columns)):
-                    if p2_tournament_count < p1_tournament_count and tournament_df.loc[player1, tournament_df.columns[column_idx]] != 0:
-                        tournaments_for_other_player[tournament_df.columns[column_idx]] = points_df.loc[player1, tournament_df.columns[column_idx]]
-                    elif p2_tournament_count >= p1_tournament_count and tournament_df.loc[player2, tournament_df.columns[column_idx]] != 0:
-                        tournaments_for_other_player[tournament_df.columns[column_idx]] = points_df.loc[player2, tournament_df.columns[column_idx]]
-
-                # Sort from highest to smallest and then add the highest value tournaments
-                tournaments_for_other_player = dict(sorted(tournaments_for_other_player.items(), key=lambda item: item[1], reverse=True))
-                for tournaments in tournaments_for_other_player.keys():
-                    if p1_tournament_subcount == p2_tournament_subcount:
-                        break
-                    elif p2_tournament_count < p1_tournament_count and tournament_df.loc[player2,tournaments] == 0:
-                        player1_score += tournaments_for_other_player[tournaments]
-                        p1_tournament_subcount += 1
-                    elif p1_tournament_count < p2_tournament_count and tournament_df.loc[player1,tournaments] == 0:
-                        player2_score += tournaments_for_other_player[tournaments]
-                        p2_tournament_subcount += 1
+            # If h2h score, get total tournament score of the players
+            p1_tournament_score = points_df.loc[player1, 'Total Score']
+            p2_tournament_score = points_df.loc[player2, 'Total Score']
             
             # Check if players are ranked and set multiplier based on that
             player1_multiply = 0
@@ -165,18 +122,14 @@ def compute_h2h_scores(tournament_df, points_df, head2head_df, json_player_data,
                 for score in player_ranking_scores[player2]:
                     player2_multiply += score        
             
-            # Add extra score if they are ranked
-            player1_score += player1_score * player1_multiply * 0.025
-            player2_score += player2_score * player2_multiply * 0.025
+            # Compute final score
+            player1_score = p1_tournament_score * max(player1_multiply, 1) * 0.025
+            player2_score = p2_tournament_score * max(player2_multiply, 1) * 0.025
             
-            # Compute difference and set it on final score
-            if head2head_df.loc[player1, player2] > 0:
-                h2h_points_df.loc[player1, player2] = player2_score * head2head_df.loc[player1, player2]
-                h2h_points_df.loc[player2, player1] = player2_score * head2head_df.loc[player2, player1]
-            else:
-                h2h_points_df.loc[player1, player2] = player1_score * head2head_df.loc[player1, player2]
-                h2h_points_df.loc[player2, player1] = player1_score * head2head_df.loc[player2, player1]
-    
+            # Set scores on table
+            h2h_points_df.loc[player1, player2] = player2_score * head2head_df.loc[player1, player2]
+            h2h_points_df.loc[player2, player1] = player1_score * head2head_df.loc[player2, player1]            
+                
     return h2h_points_df
          
 def compute_ranking():
@@ -193,7 +146,7 @@ def compute_ranking():
         
     # Get data from tournaments
     tournament_df = pd.read_excel('ranking_data.xlsx', sheet_name='Placements', index_col=0)
-    head2head_df = pd.read_excel('ranking_data.xlsx', sheet_name='Head-Head', index_col=0)
+    head2head_df = pd.read_excel('ranking_data.xlsx', sheet_name='Head2Head', index_col=0)
     
     # Open and read the JSON file
     json_tournament_data = None
@@ -233,19 +186,22 @@ def compute_ranking():
             tournament_tier = 3.75
         tournament_points.append(entrant_score * tournament_tier * 0.01)
     
-    # Get all playr's tournament points and sort excel by total score
+    # Get all player's tournament points and sort excel by total score
     points_df = compute_tournament_scores(tournament_df, json_tournament_data, tournament_points)
     points_df = points_df.sort_values(by=['Total Score', 'Total Tournaments'], ascending=[False, False])
     print('Tournament points have been computed for each player')
     
     # Get all h2h scores
-    h2h_points_df = compute_h2h_scores(tournament_df, points_df, head2head_df, json_player_data, playerRankingScores)
+    h2h_points_df = compute_h2h_scores(points_df, head2head_df, json_player_data, playerRankingScores)
     print('Head to head points have been computed for each player')
+    
+    if 'Natalia' not in h2h_points_df.index:
+        raise ValueError("Player 'Natalia' not found in points_df")
     
     # Get final list of players (Only players that played X amount of tournaments)
     final_player_list = []
     for player in playerNames:
-        if points_df.loc[player, 'Total Tournaments'] >= 4:
+        if points_df.loc[player, 'Total Tournaments'] >= 1:
             final_player_list.append(player)
     
     # Create final dataframe
@@ -257,11 +213,13 @@ def compute_ranking():
     for player in final_player_list:
         final_score = points_df.loc[player, 'Total Score']
         h2h_score = 0
+        
+        # Get positive h2h scores of player
         for column_idx in range(len(h2h_points_df.columns)):
             if h2h_points_df.loc[player, h2h_points_df.columns[column_idx]] != 0 and h2h_points_df.loc[player, h2h_points_df.columns[column_idx]] != '-':
-                name = h2h_points_df.columns[column_idx]
-                tmp = h2h_points_df.loc[player, h2h_points_df.columns[column_idx]]
                 h2h_score += h2h_points_df.loc[player, h2h_points_df.columns[column_idx]]
+                
+        # Multiply by 0.1 and add to final score
         final_score += h2h_score * 0.1
         final_score_df.loc[player, 'Final Score'] = final_score 
     final_score_df = final_score_df.sort_values(by='Final Score', ascending=False)
@@ -269,6 +227,13 @@ def compute_ranking():
     # Write the DataFrames back to the excel
     points_df = points_df.reset_index()
     with pd.ExcelWriter('ranking_data.xlsx', engine='openpyxl', mode='a') as writer:
-      points_df.to_excel(writer, sheet_name='Tournament Score', index=False)
-      h2h_points_df.to_excel(writer, sheet_name='H2H Score', index=True)
-      final_score_df.to_excel(writer, sheet_name='Final Ranking', index=True)  
+        # Check if the sheet already exists and delete it if it does
+        if 'Tournament Scores' in writer.book.sheetnames:
+            del writer.book['Tournament Scores']
+            del writer.book['Head2Head Scores']
+            del writer.book['Final Ranking']
+
+        # Write the DataFrames to different sheets in the Excel file
+        points_df.to_excel(writer, sheet_name='Tournament Scores', index=False)
+        h2h_points_df.to_excel(writer, sheet_name='Head2Head Scores', index=True)
+        final_score_df.to_excel(writer, sheet_name='Final Ranking', index=True)  

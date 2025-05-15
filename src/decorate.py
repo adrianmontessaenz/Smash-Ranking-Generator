@@ -53,12 +53,13 @@ def decorate_excel(excel):
     
     # Decorate placements sheets
     decorate_placements(workbook['Placements'])
-    decorate_placements(workbook['Tournament Score'])
+    decorate_placements(workbook['Tournament Scores'])
     decorate_placements(workbook['Final Ranking'])
+    decorate_placements(workbook['PlayerInfo'])
       
     # Decorate h2h sheets
-    decorate_h2h(workbook['Head-Head'], 25)
-    decorate_h2h(workbook['H2H Score'], 2)
+    decorate_h2h(workbook['Head2Head'], 25)
+    decorate_h2h(workbook['Head2Head Scores'], 2)
           
     # Save the changes
     workbook.save('ranking_data.xlsx')

@@ -6,7 +6,7 @@ import sys
 import pandas as pd
 import os
 
-from data_manager import add_tournament, add_head2head
+from data_manager import add_tournament, add_head2head, add_player_info
 from ranking_manager import compute_ranking
 from decorate import decorate_excel
 
@@ -54,8 +54,12 @@ def fetch_tournament(slug, eventSlug):
           	}
             nodes{
               id
+              isDisqualified
               participants{
                 gamerTag
+                user{
+                  id
+                }
               }
               standing {
                 placement
@@ -104,12 +108,12 @@ if __name__ == "__main__":
         decorate_excel('ranking_data.xlsx')
         sys.exit(0)
       else:
-        print("Usage: python app.py <tournament_slug> <event_slug> <tournament_tier> or python app.py compute")
+        print("Usage: python app.py <tournament_slug> <event_slug> <tournament_tier> or python app.py compute / decorate")
         sys.exit(1)
         
     # Check if a slug was provided as a command-line argument
     elif len(sys.argv) != 4:
-        print("Usage: python app.py <tournament_slug> <event_slug> <tournament_tier> or python app.py compute")
+        print("Usage: python app.py <tournament_slug> <event_slug> <tournament_tier> or python app.py compute / decorate")
         sys.exit(1)
 
     # Get tournament and event slug and retrieve needed data 
@@ -136,24 +140,29 @@ if __name__ == "__main__":
       sys.exit(0)
     json_data['tournaments'].append(tmp_data)
     
+    # Create DataFrames to store data
     tournament_df_old = None
     head2head_df_old = None
+    player_info_df_old = None
     
     # If excel already created, add new tournament to data
     if os.path.exists('ranking_data.xlsx'):
       tournament_df_old = pd.read_excel('ranking_data.xlsx', sheet_name='Placements')
-      head2head_df_old = pd.read_excel('ranking_data.xlsx', sheet_name='Head-Head', index_col=0)
+      head2head_df_old = pd.read_excel('ranking_data.xlsx', sheet_name='Head2Head', index_col=0)
+      player_info_df_old = pd.read_excel('ranking_data.xlsx', sheet_name='PlayerInfo')
             
     # Create placement and head-head dataframes with new data
-    tournament_df = add_tournament(final_data, tournament_df_old)
-    head2head_df = add_head2head(final_data, head2head_df_old)
+    player_info_df = add_player_info(final_data, player_info_df_old)
+    tournament_df = add_tournament(final_data, player_info_df, tournament_df_old)
+    head2head_df = add_head2head(final_data, player_info_df, head2head_df_old)
     
     # Write the DataFrames to different sheets in an Excel file
     with pd.ExcelWriter('ranking_data.xlsx', engine='openpyxl', mode='w') as writer:
+      player_info_df.to_excel(writer, sheet_name='PlayerInfo', index=False)
       tournament_df.to_excel(writer, sheet_name='Placements', index=False)
-      head2head_df.to_excel(writer, sheet_name='Head-Head', index=True)
+      head2head_df.to_excel(writer, sheet_name='Head2Head', index=True)
     print("Tournament data has been stored in ranking_data.xlsx")
-      
+    
     # Save data to a JSON file
     with open('tournament_data.json', 'w') as json_file:
         json.dump(json_data, json_file, indent=4)

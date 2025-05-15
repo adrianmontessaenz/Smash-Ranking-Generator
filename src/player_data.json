@@ -3,37 +3,38 @@
         {
             "top1-5":
             {
-                "point_multiplier": 50,
+                "point_multiplier": 100,
                 "players":
                 [ 
                 ]  
             },
             "top6-10":
             {
-                "point_multiplier": 20,
+                "point_multiplier": 50,
                 "players":
                 [
                     {
-                        "name": "Molo"
+                        "name": "ElSantoGTZ"
                     },
                     {
-                        "name": "ElSantoGTZ"
+                        "name": "Pepo"
                     }
                 ]
             },
             "top11-20": 
             {
-                "point_multiplier": 10,
-                "players":[
+                "point_multiplier": 35,
+                "players":
+                [
+                    {
+                        "name": "Molo"
+                    }
                 ]
             },
             "top21-30":
             { 
-                "point_multiplier": 5,
+                "point_multiplier": 20,
                 "players":[
-                    {
-                        "name": "gafce"
-                    },
                     {
                         "name": "Cacahuet"
                     }
@@ -41,44 +42,41 @@
             },
             "top31-50": 
             {
-                "point_multiplier": 2.5,
+                "point_multiplier": 15,
                 "players":
                 [
                     {
-                        "name": "Zant"
+                        "name": "gafce"
                     },
                     {
-                        "name": "BlackLoner"
+                        "name": "Andhi"
                     },
                     {
                         "name": "rmoragar"
                     },
                     {
-                        "name": "Chules"
+                        "name": "Saihara"
                     }
                 ]
             },
             "top51-75": 
             {
-                "point_multiplier": 1.75,
+                "point_multiplier": 7.5,
                 "players":[
                     {
                         "name": "AleXXanti"
                     },
                     {
-                        "name": "53845"
+                        "name": "esca"
                     }
                 ]
             },
             "top76-100": 
             {
-                "point_multiplier": 1.5,
+                "point_multiplier": 5,
                 "players":[
                     {
-                        "name": "Andhi"
-                    },
-                    {
-                        "name": "ML41"
+                        "name": "Nosferatu"
                     }
                 ]
             }
@@ -94,10 +92,10 @@
                     "name": "Molo"
                 },
                 {
-                    "name": "BlackLoner"
+                    "name": "Andhi"
                 },
                 {
-                    "name": "Andhi"
+                    "name": "Dasher"
                 }
             ]
         },
@@ -107,13 +105,13 @@
             "players":
             [
                 {
-                    "name": "gafce"
-                },
-                {
                     "name": "Nosferatu"
                 },
                 {
-                    "name": "ML41"
+                    "name": "gafce"
+                },
+                {
+                    "name": "Tormen"
                 }
             ]
         },
@@ -123,16 +121,16 @@
             "players":
             [
                 {
-                    "name": "Pope"
+                    "name": "Ego"
                 },
                 {
-                    "name": "Frey"
+                    "name": "Blackloner"
                 },
                 {
-                    "name": "PixelR_"
+                    "name": "ML41"
                 },
                 {
-                    "name": "LK"
+                    "name": "Ivan du chit"
                 }
             ]
         },
@@ -142,19 +140,19 @@
             "players":
                 [
                 {
+                    "name": "Maeru"
+                },
+                {
                     "name": "TNuke"
                 },
                 {
-                    "name": "Dic"
+                    "name": "Iker"
                 },
                 {
-                    "name": "JorgitoPredator"
+                    "name": "Pope"
                 },
                 {
-                    "name": "El Juancho"
-                },
-                {
-                    "name": "EgoSBS"
+                    "name": "YOGY"
                 }
             ]
         },
@@ -164,19 +162,19 @@
             "players":
             [
                 {
-                    "name": "Tormen"
+                    "name": "CONITO"
                 },
                 {
-                    "name": "YOGY"
+                    "name": "LK"
                 },
                 {
                     "name": "Unai"
                 },
                 {
-                    "name": "Siegward"
+                    "name": "Default"
                 },
                 {
-                    "name": "chatu"
+                    "name": "JorgitoPredator"
                 }
             ]
         }
@@ -185,7 +183,7 @@
     {
         "top1-5": 
         {
-            "point_multiplier": 50,
+            "point_multiplier": 100,
             "players":
             [
                 {
@@ -195,7 +193,7 @@
         },
         "top6-10": 
         {
-            "point_multiplier": 20,
+            "point_multiplier": 50,
             "players":
             [
                 {
@@ -205,7 +203,7 @@
         },
         "top11-20": 
         {
-            "point_multiplier": 10,
+            "point_multiplier": 35,
             "players":
             [
                 {
@@ -236,12 +234,9 @@
         },
         "top21-30": 
         {
-            "point_multiplier": 5,
+            "point_multiplier": 20,
             "players":
             [
-                {
-                    "name": "Ivan du chit"
-                },
                 {
                     "name": "Merredion"
                 },
@@ -255,9 +250,12 @@
         },
         "top31-50": 
         {
-            "point_multiplier": 2.5,
+            "point_multiplier": 15,
             "players":
             [
+                {
+                    "name": "Ivan du chit"
+                },
                 {
                     "name": "Maeru"
                 },
