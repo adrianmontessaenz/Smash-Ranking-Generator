@@ -7,7 +7,10 @@ def add_player_info(json_data, player_df: pd.DataFrame | None = None) -> pd.Data
     # Get player data from tournament
     entrants = json_data['tournament']['events'][0]['entrants']['nodes']
     playerNames = [entrant['participants'][0]['gamerTag'] for entrant in entrants]
-    playerIds = [entrant['participants'][0]['user']['id'] for entrant in entrants]
+    playerIds = [
+        entrant['participants'][0]['user']['id'] if entrant['participants'][0]['user'] is not None else -1
+        for entrant in entrants
+    ]
     
     # If file exists, add new players manually. Check if there are repeated ids with different names
     if player_df is None:
@@ -15,6 +18,10 @@ def add_player_info(json_data, player_df: pd.DataFrame | None = None) -> pd.Data
         
     else:
         for idx, player_id in enumerate(playerIds):
+            if player_id == -1:
+                # If player_id is -1, skip this player
+                continue
+            
             player_name = playerNames[idx]
             
             # If id is not in file, add it
@@ -56,7 +63,10 @@ def add_tournament(json_data, player_info_df : pd.DataFrame, tournament_df: pd.D
     tournament_name = json_data['tournament']['name']
     entrants = json_data['tournament']['events'][0]['entrants']['nodes']
     playerNames = [entrant['participants'][0]['gamerTag'] for entrant in entrants]
-    playerIds = [entrant['participants'][0]['user']['id'] for entrant in entrants]
+    playerIds = [
+        entrant['participants'][0]['user']['id'] if entrant['participants'][0]['user'] is not None else -1
+        for entrant in entrants
+    ]
     placements = [int(entrant['standing']['placement']) for entrant in entrants]
     disqualified = [entrant['isDisqualified'] for entrant in entrants]
     
@@ -87,26 +97,29 @@ def add_tournament(json_data, player_info_df : pd.DataFrame, tournament_df: pd.D
             # If player is not in the dataframe, add them
             else:
                 # Get player name from player_info_df
-                player_id_row_idx = player_info_df[player_info_df['IDs'] == player_id].index[0]
-                it = 1
                 changedName = False
-                while True:
-                    cell_value = player_info_df.at[player_id_row_idx, f'PlayerNames{it}']
-                    
-                    # If name is already in the list, break
-                    if cell_value in tournament_df['Players'].values:
-                        changedName = True
-                        break
-                    
-                    # If reached end of the list, break
-                    elif pd.isna(cell_value):
-                        break
-                    
-                    it += 1
-                    # If it is the last column, break
-                    if f'PlayerNames{it}' not in player_info_df.columns:
-                        break
-                
+                if player_id != -1:
+                    player_id_row_idx = player_info_df[player_info_df['IDs'] == player_id].index[0]
+                    it = 1
+                    while True:
+                        if player_id == -1:
+                            # If player_id is -1, skip this player
+                            break
+                        cell_value = player_info_df.at[player_id_row_idx, f'PlayerNames{it}']
+
+                        # If name is already in the list, break
+                        if cell_value in tournament_df['Players'].values:
+                            changedName = True
+                            break
+                        
+                        # If reached end of the list, break
+                        elif pd.isna(cell_value):
+                            break
+                        
+                        it += 1
+                        # If it is the last column, break
+                        if f'PlayerNames{it}' not in player_info_df.columns:
+                            break
                 if changedName:
                     # Get the name from the dataframe
                     prev_player_name = player_info_df.at[player_id_row_idx, f'PlayerNames{it}']
@@ -123,7 +136,10 @@ def add_head2head(json_data, player_info_df : pd.DataFrame, head2head_df: pd.Dat
     # Get needed variables and create dataframe
     entrants = json_data['tournament']['events'][0]['entrants']['nodes']
     playerNames = [entrant['participants'][0]['gamerTag'] for entrant in entrants]
-    playerIds = [entrant['participants'][0]['user']['id'] for entrant in entrants]
+    playerIds = [
+        entrant['participants'][0]['user']['id'] if entrant['participants'][0]['user'] is not None else -1
+        for entrant in entrants
+    ]
     
     # If not file, create h2h table from 0
     if head2head_df is None:
@@ -147,26 +163,26 @@ def add_head2head(json_data, player_info_df : pd.DataFrame, head2head_df: pd.Dat
             
             if player_name not in players_row:
                 # Get player name from player_info_df
-                player_id_row_idx = player_info_df[player_info_df['IDs'] == player_id].index[0]
-                it = 1
                 old_name = None
-                while True:
-                    cell_value = player_info_df.at[player_id_row_idx, f'PlayerNames{it}']
-                    
-                    # If name is already in the list, break
-                    if cell_value in players_row:
-                        old_name = cell_value
-                        break
-                    
-                    # If reached end of the list, break
-                    elif pd.isna(cell_value):
-                        break
-                    
-                    it += 1
-                    # If it is the last column, break
-                    if f'PlayerNames{it}' not in player_info_df.columns:
-                        break
-                
+                if player_id != -1:
+                    player_id_row_idx = player_info_df[player_info_df['IDs'] == player_id].index[0]
+                    it = 1
+                    while True:                    
+                        cell_value = player_info_df.at[player_id_row_idx, f'PlayerNames{it}']
+
+                        # If name is already in the list, break
+                        if cell_value in players_row:
+                            old_name = cell_value
+                            break
+                        
+                        # If reached end of the list, break
+                        elif pd.isna(cell_value):
+                            break
+                        
+                        it += 1
+                        # If it is the last column, break
+                        if f'PlayerNames{it}' not in player_info_df.columns:
+                            break
                 if old_name is not None:
                     # Replace old_name with new player_name in the index
                     new_rows = players_row.to_list()
@@ -187,12 +203,12 @@ def add_head2head(json_data, player_info_df : pd.DataFrame, head2head_df: pd.Dat
     
     # Check matches
     for entrant in entrants:
-      gamerId = entrant['id']
+      gamerId = entrant['id'] if entrant['participants'][0]['user'] is not None else -1
       gamerTag = entrant['participants'][0]['gamerTag']
       for set in entrant['paginatedSets']['nodes']:
         
         # If player won set, mark head to head as win
-        if set['winnerId'] == gamerId:
+        if set['winnerId'] == gamerId or (set['winnerId'] == None and gamerId == -1):
           player1name = set['slots'][0]['entrant']['participants'][0]['gamerTag']
           player2name = set['slots'][1]['entrant']['participants'][0]['gamerTag']
           rivalName = player1name if player1name != gamerTag else player2name

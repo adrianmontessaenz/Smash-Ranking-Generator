@@ -42,6 +42,13 @@ def compute_tournament_scores(tournament_df, json_tournament_data, tournament_po
             # Set points depending on position and tier 
             if placement is None or placement == 0:
                 continue
+            if json_tournament_data['tournaments'][json_idx]['tier'] == 'D':
+                if placement < 3:
+                    points = tournament_points[column_idx] * (1 + entrants - min(entrants, placement))/entrants
+                elif placement < 8:
+                    points = tournament_points[column_idx] * (1 + entrants - min(entrants, placement))/entrants * 0.75
+                else:
+                    points = tournament_points[column_idx] * (1 + entrants - min(entrants, placement))/entrants * 0.5
             if json_tournament_data['tournaments'][json_idx]['tier'] == 'C':
                 if placement < 3:
                     points = tournament_points[column_idx] * (1 + entrants - min(entrants, placement))/entrants * 1.5
@@ -164,27 +171,29 @@ def compute_ranking():
         
     # Compute each tournament value
     tournament_points = []
-    for column_idx in range(len(tournament_df.columns)):
-        # Get index of tournament in json
-        json_idx = len(tournament_df.columns) - (column_idx+1)
-                    
+    for column_idx in range(len(tournament_df.columns)):                   
         # Set score based on entrants and player points
-        entrant_score = 5*json_tournament_data['tournaments'][json_idx]['entrants']
+        entrant_score = 5*json_tournament_data['tournaments'][column_idx]['entrants']
         for player in playerNames:
             if tournament_df.loc[player, tournament_df.columns[column_idx]] <= 0:
                 continue
             if playerRankingScores[player][0] > 0:
                 entrant_score += 5*playerRankingScores[player][0]
+            elif playerRankingScores[player][1] > 0:
+                entrant_score += 2.5*playerRankingScores[player][1]
             elif playerRankingScores[player][2] > 0:
                 entrant_score += 5*playerRankingScores[player][2]
                 
         # Set multiplier of tier of tournament and append final score to list
-        tournament_tier = 1.25
-        if json_tournament_data['tournaments'][json_idx]['tier'] == 'B':
+        tournament_tier = 1
+        if json_tournament_data['tournaments'][column_idx]['tier'] == 'C':
+            tournament_tier = 1.25
+        elif json_tournament_data['tournaments'][column_idx]['tier'] == 'B':
             tournament_tier = 2.5
-        elif json_tournament_data['tournaments'][json_idx]['tier'] == 'A':
+        elif json_tournament_data['tournaments'][column_idx]['tier'] == 'A':
             tournament_tier = 3.75
         tournament_points.append(entrant_score * tournament_tier * 0.01)
+        json_tournament_data['tournaments'][column_idx]['final_score'] = entrant_score * tournament_tier * 0.01
     
     # Get all player's tournament points and sort excel by total score
     points_df = compute_tournament_scores(tournament_df, json_tournament_data, tournament_points)
@@ -201,7 +210,7 @@ def compute_ranking():
     # Get final list of players (Only players that played X amount of tournaments)
     final_player_list = []
     for player in playerNames:
-        if points_df.loc[player, 'Total Tournaments'] >= 1:
+        if points_df.loc[player, 'Total Tournaments'] >= 3:
             final_player_list.append(player)
     
     # Create final dataframe

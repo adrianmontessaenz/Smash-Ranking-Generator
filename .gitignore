@@ -1,2 +1,4 @@
 *.xlsx
 .vscode
+old_data/
+*.json

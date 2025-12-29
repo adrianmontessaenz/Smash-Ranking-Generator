@@ -15,7 +15,7 @@ def fetch_tournament(slug, eventSlug):
     # Set up the GraphQL client
     transport = RequestsHTTPTransport(
         url="https://api.start.gg/gql/alpha",
-        headers={"Authorization": "Bearer dc6a93f91afd04e48bb932193e03882e"},  # Replace with your actual API token
+        headers={"Authorization": "Bearer 78294e27f422de785e5a19ab20cd309b"},  # Replace with your actual API token
         use_json=True,
     )
     client = Client(transport=transport, fetch_schema_from_transport=True)
