@@ -1,7 +1,8 @@
 import tkinter as tk
 import customtkinter as ctk
 import GUI.window as window
-from GUI.ranking.data_manager import DataManager
+from ranking.data_manager import DataManager
+import GUI.utils as gui_utils
 
 class TournamentFrame(ctk.CTkFrame):
     def __init__(self, master, data_manager : DataManager):
@@ -18,19 +19,27 @@ class TournamentFrame(ctk.CTkFrame):
         
     def _show_default_middle_frame(self):
         self.middle_frame.destroy()
+        self._left_frame.button4.configure(state="disabled")
         self.middle_frame = _DefaultMiddleFrame(self)
     
     def _show_add_tournament_middle_frame(self):
         self.middle_frame.destroy()
+        self._left_frame.button4.configure(state="normal")
         self.middle_frame = _AddTournamentMiddleFrame(self)
         
     def _show_remove_tournament_middle_frame(self):
         self.middle_frame.destroy()
+        self._left_frame.button4.configure(state="normal")
         self.middle_frame = _RemoveTournamentMiddleFrame(self)
     
     def _show_edit_tournament_middle_frame(self):
         self.middle_frame.destroy()
+        self._left_frame.button4.configure(state="normal")
         self.middle_frame = _EditTournamentMiddleFrame(self)
+        
+    def _reload_right_frame(self):
+        self.right_frame.destroy()
+        self.right_frame = _RightFrame(self)
 
 # Left frame class
 class _LeftFrame(ctk.CTkFrame):
@@ -75,12 +84,15 @@ class _RightFrame(ctk.CTkFrame):
         self.data_frame = ctk.CTkScrollableFrame(self)
         self.data_frame.pack(padx=5, fill="both", expand=True)
         
-        # Pseudo code:
+        # Populate with tournament data
         for tournament in master.data_manager.get_tournaments():
-            tournament_frame = ctk.CTkFrame(self.data_frame)
-            tournament_frame.pack(padx=10, pady=10, fill="x")
-            tournament_label = ctk.CTkLabel(tournament_frame, text=f"Tournament Name: {tournament['name']}\nEntrants: {tournament['entrants']}\nTier: {tournament['tier']}\nLink: {tournament['link']}", wraplength=250)
-            tournament_label.pack(padx=5, pady=5)
+            tournament_info = {
+                "Entrants": tournament['entrants'],
+                "Tier": tournament['tier'],
+                "Link": tournament['link']
+            }
+            tournament_frame = gui_utils.CollapsibleFrame(self.data_frame, title=tournament['name'], data=tournament_info, height=60)
+            tournament_frame.pack(fill="x", padx=5)
     
 class _DefaultMiddleFrame(ctk.CTkFrame):
     def __init__(self, master):
@@ -114,7 +126,6 @@ class _AddTournamentMiddleFrame(ctk.CTkFrame):
         super().__init__(master)
         
         self.pack(side="left", fill="both", expand=True)
-        master.left_frame.button4.configure(state="normal")
         self.configure(fg_color="transparent", height=400)
         self.title_label = ctk.CTkLabel(self, text="Add Tournament", font=ctk.CTkFont(size=25, weight="bold"))
         self.title_label.pack(pady=20)
@@ -127,7 +138,7 @@ class _AddTournamentMiddleFrame(ctk.CTkFrame):
         
         self.tier_label = ctk.CTkLabel(self, text="Tournament Tier:")
         self.tier_label.pack(pady=10)
-        self.tier_entry = ctk.CTkOptionMenu(self, values=["SS", "S", "A", "B", "C", "D"])
+        self.tier_entry = ctk.CTkOptionMenu(self, values=["SS", "S", "A", "B", "C", "D"], variable = ctk.StringVar(value="D"))
         self.tier_entry.pack(pady=10)
         
         self.add_button = ctk.CTkButton(self, text="Submit", command=self._submit_tournament)
@@ -136,7 +147,9 @@ class _AddTournamentMiddleFrame(ctk.CTkFrame):
     def _submit_tournament(self):
         link = self.link_entry.get()
         tier = self.tier_entry.get()
-        self.master.data_manager.get_tournament_manager().add_tournament(link, tier)
+        self.master.data_manager.add_tournament(link, tier)
+        self.link_entry.delete(0, 'end')
+        self.master._reload_right_frame()
         # Show confirmation message or error message on logger (to be implemented)
         
 class _RemoveTournamentMiddleFrame(ctk.CTkFrame):
@@ -153,7 +166,11 @@ class _RemoveTournamentMiddleFrame(ctk.CTkFrame):
         self.info_label = ctk.CTkLabel(self, text="Select the tournament you wish to remove from the ranking calculations.")
         self.info_label.pack(pady=10)
         
-        self.tournament_optionmenu = ctk.CTkOptionMenu(self, values=[t['name'] for t in master.data_manager.get_tournaments()])
+        self.tournament_optionmenu = ctk.CTkOptionMenu(
+            self, 
+            values=[t['name'] for t in master.data_manager.get_tournaments()] if master.data_manager.get_tournaments() else ["No Tournaments"], 
+            variable = ctk.StringVar(value=master.data_manager.get_tournaments()[0]['name'] if master.data_manager.get_tournaments() else "No Tournaments")
+            )
         self.tournament_optionmenu.pack(pady=10)
         
         self.remove_button = ctk.CTkButton(self, text="Remove", command=self._remove_tournament)
@@ -161,7 +178,9 @@ class _RemoveTournamentMiddleFrame(ctk.CTkFrame):
         
     def _remove_tournament(self):
         tournament_name = self.tournament_optionmenu.get()
-        self.master.data_manager.get_tournament_manager().remove_tournament(tournament_name)
+        self.master.data_manager.remove_tournament(tournament_name)
+        self.master._reload_right_frame()
+        self.master._show_remove_tournament_middle_frame()  # Refresh the middle frame
         # Show confirmation message or error message on logger (to be implemented)
         
 class _EditTournamentMiddleFrame(ctk.CTkFrame):
@@ -178,13 +197,21 @@ class _EditTournamentMiddleFrame(ctk.CTkFrame):
         self.info_label = ctk.CTkLabel(self, text="Select the tournament you wish to edit.")
         self.info_label.pack(pady=10)
         
-        self.tournament_optionmenu = ctk.CTkOptionMenu(self, values=[t['name'] for t in master.data_manager.get_tournaments()])
+        self.tournament_optionmenu = ctk.CTkOptionMenu(
+            self, 
+            values=[t['name'] for t in master.data_manager.get_tournaments()] if master.data_manager.get_tournaments() else ["No Tournaments"], 
+            variable = ctk.StringVar(value=master.data_manager.get_tournaments()[0]['name'] if master.data_manager.get_tournaments() else "No Tournaments")
+            )
         self.tournament_optionmenu.pack(pady=10)
         
         self.info_label2 = ctk.CTkLabel(self, text= "Edit the tournament tier:")
         self.info_label2.pack(pady=10)
         
-        self.tier_entry = ctk.CTkOptionMenu(self, values=["SS", "S", "A", "B", "C", "D"])
+        self.tier_entry = ctk.CTkOptionMenu(
+            self, 
+            values=["SS", "S", "A", "B", "C", "D"], 
+            variable = ctk.StringVar(value=master.data_manager.get_tournaments()[0]['tier'] if master.data_manager.get_tournaments() else "D")
+            )
         self.tier_entry.pack(pady=10)
         
         self.edit_button = ctk.CTkButton(self, text="Edit", command=self._edit_tournament)
@@ -194,5 +221,7 @@ class _EditTournamentMiddleFrame(ctk.CTkFrame):
         tournament_name = self.tournament_optionmenu.get()
         new_tier = self.tier_entry.get()
         
-        self.master.data_manager.get_tournament_manager().change_tournament_tier(tournament_name, new_tier)
+        self.master.data_manager.change_tournament_tier(tournament_name, new_tier)
+        self.master._reload_right_frame()
+        self.master._show_edit_tournament_middle_frame()  # Refresh the middle frame
         # Logic to edit the selected tournament (to be implemented)

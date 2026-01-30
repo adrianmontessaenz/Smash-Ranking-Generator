@@ -1,5 +1,5 @@
 import GUI.window as window
-from GUI.ranking.data_manager import DataManager
+from ranking.data_manager import DataManager
 
 if __name__ == "__main__":
     # Initialize and run the application

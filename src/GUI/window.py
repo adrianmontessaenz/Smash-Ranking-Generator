@@ -2,7 +2,8 @@ from tkinter import *
 import customtkinter
 import GUI.frames.home_frame as home_frame
 import GUI.frames.tournament_frame as tournament_frame
-from GUI.ranking.data_manager import DataManager
+import GUI.frames.player_frame as player_frame
+from ranking.data_manager import DataManager
 
 class AppWindow(customtkinter.CTk):
     def __init__(self, data_manager: DataManager):
@@ -38,7 +39,8 @@ class AppWindow(customtkinter.CTk):
         self.frame = tournament_frame.TournamentFrame(self, self.data_manager)
     
     def _show_player_data_frame(self):
-        pass
+        self._clear_frame()
+        self.frame = player_frame.PlayerFrame(self, self.data_manager)
 
     def _show_ranking_rules_frame(self):
         pass

@@ -4,7 +4,7 @@ from pathlib import Path
 import json
 import os
 
-class TournamentManager:
+class _TournamentManager:
     def __init__(self):
     # Load tournament data (if any)
         if os.path.exists("data/tournaments.json"):
@@ -12,7 +12,33 @@ class TournamentManager:
                 self._tournaments = json.load(tournaments_file)
         else:
             self._tournaments = []
+    # Load API key from config file if it exists
+        if os.path.exists("data/config.json"):
+            with open("data/config.json", "r") as config_file:
+                config_data = json.load(config_file)
+                self._api_key = config_data.get("api_key", "")
+        else:
+            self._api_key = ""
+    
+    # ------------ Public Methods ------------ #
+    # ------------ API Key Methods ------------ #
+    def get_api_key(self):
+        return self._api_key
+      
+    def save_api_key(self, api_key):
+        self._api_key = api_key
+        config_data = {"api_key": api_key}
         
+        # Set up data directory and config file path
+        data_dir = Path("data")
+        config_path = data_dir / "config.json"
+        
+        # Save the API key to the config file
+        data_dir.mkdir(exist_ok=True)
+        with config_path.open("w") as config_file:
+            json.dump(config_data, config_file)
+    
+    # ------------ Tournament Methods ------------ #
     def get_tournaments(self):
         return self._tournaments
     
@@ -74,11 +100,18 @@ class TournamentManager:
             # Extract match data
             for match in entrant['paginatedSets']['nodes']:
                 # Get opponent info
-                other_player = ""
+                other_player = {}
                 for slot in match['slots']:
-                    participant = slot['entrant']['participants'][0]['gamerTag']
-                    if participant != player_info['gamerTag']:
-                        other_player = participant
+                    participantID = slot['entrant']['participants'][0]['user']['id']
+                    if participantID != player_info['userId']:
+                        other_player = {
+                            "gamerTag": slot['entrant']['participants'][0]['gamerTag'],
+                            "isDisqualified": slot['entrant']['isDisqualified'],
+                            "userId": slot['entrant']['participants'][0]['user']['id']
+                        }
+                        break
+                      
+                # Determine win/loss
                 if match["winnerId"] == entrant["id"]:
                     player_info['matches']['wins'].append(other_player)
                 else:
@@ -110,7 +143,9 @@ class TournamentManager:
             json.dump(self._tournaments, tournaments_file, indent=4)
 
         return "Tournament removed successfully."
-        
+    
+    # ------------ Private Methods ------------ #
+    
     def _fetch_tournament_data(self, slug, eventSlug) -> dict:
         # Function to fetch tournament data and store it in a JSON file
         # Set up the GraphQL client
@@ -149,8 +184,12 @@ class TournamentManager:
                       winnerId
                       slots{
                         entrant{
+                          isDisqualified
                           participants{
                             gamerTag
+                            user{
+                              id
+                            }
                           }
                         }
                       }                

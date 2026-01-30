@@ -1,7 +1,7 @@
 from tkinter import *
 import customtkinter as ctk
 import GUI.window as window
-from GUI.ranking.data_manager import DataManager
+from ranking.data_manager import DataManager
 
 class HomeFrame(ctk.CTkFrame):
     def __init__(self, master, data_manager : DataManager):
