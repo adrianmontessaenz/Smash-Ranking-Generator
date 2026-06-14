@@ -9,9 +9,14 @@ class _TournamentManager:
     # Load tournament data (if any)
         if os.path.exists("data/tournaments.json"):
             with open("data/tournaments.json", "r") as tournaments_file:
-                self._tournaments = json.load(tournaments_file)
+                tournaments_data = json.load(tournaments_file)
+                self._tournaments = tournaments_data.get("tournaments", [])
+                self._tiers = tournaments_data.get("tiers", {"SS": 20.0, "S": 15.0, "A": 7.5, "B": 2.5, "C": 1.0, "D": 0.75})
         else:
-            self._tournaments = []
+            with open("data/tournaments.json", "w") as tournaments_file:
+                json.dump({"tournaments": [], "tiers": {"SS": 20.0, "S": 15.0, "A": 7.5, "B": 2.5, "C": 1.0, "D": 0.75}}, tournaments_file)
+                self._tournaments = []
+                self._tiers = {"SS": 20.0, "S": 15.0, "A": 7.5, "B": 2.5, "C": 1.0, "D": 0.75}
     # Load API key from config file if it exists
         if os.path.exists("data/config.json"):
             with open("data/config.json", "r") as config_file:
@@ -37,6 +42,9 @@ class _TournamentManager:
     # ------------ Tournament Methods ------------ #
     def get_tournaments(self):
         return self._tournaments
+
+    def get_tournament_tiers(self):
+        return self._tiers
     
     def change_tournament_tier(self, tournament_name, new_tier):
         for tournament in self._tournaments:
@@ -47,7 +55,11 @@ class _TournamentManager:
         # Save updated tournaments data to file
         tournaments_path = Path("data/tournaments.json")
         with tournaments_path.open("w") as tournaments_file:
-            json.dump(self._tournaments, tournaments_file, indent=4)
+            tournaments_data = {
+                "tournaments": self._tournaments,
+                "tiers": self._tiers
+            }
+            json.dump(tournaments_data, tournaments_file, indent=4)
 
         return "Tournament tier updated successfully."
             
@@ -88,7 +100,6 @@ class _TournamentManager:
                 "gamerTag": entrant['participants'][0]['gamerTag'],
                 "userId": entrant['participants'][0]['user']['id'],
                 "placement": entrant['standing']['placement'],
-                "isDisqualified": entrant['isDisqualified'],
                 "matches": {"wins": [], "losses": []}
             }
             # Extract match data
@@ -100,7 +111,7 @@ class _TournamentManager:
                     if participantID != player_info['userId']:
                         other_player = {
                             "gamerTag": slot['entrant']['participants'][0]['gamerTag'],
-                            "isDisqualified": slot['entrant']['isDisqualified'],
+                            "isDisqualified": True if match["displayScore"] == "DQ" else False,
                             "userId": slot['entrant']['participants'][0]['user']['id']
                         }
                         break
@@ -118,7 +129,11 @@ class _TournamentManager:
         # Save updated tournaments data to file
         tournaments_path = Path("data/tournaments.json")
         with tournaments_path.open("w") as tournaments_file:
-            json.dump(self._tournaments, tournaments_file, indent=4)
+            tournaments_data = {
+                "tournaments": self._tournaments,
+                "tiers": self._tiers
+            }
+            json.dump(tournaments_data, tournaments_file, indent=4)
 
         print("Tournament added successfully.")
         return "Tournament added successfully."
@@ -130,7 +145,11 @@ class _TournamentManager:
         # Save updated tournaments data to file
         tournaments_path = Path("data/tournaments.json")
         with tournaments_path.open("w") as tournaments_file:
-            json.dump(self._tournaments, tournaments_file, indent=4)
+            tournaments_data = {
+                "tournaments": self._tournaments,
+                "tiers": self._tiers
+            }
+            json.dump(tournaments_data, tournaments_file, indent=4)
 
         return "Tournament removed successfully."
     
@@ -172,9 +191,9 @@ class _TournamentManager:
                     nodes
                     {
                       winnerId
+                      displayScore
                       slots{
                         entrant{
-                          isDisqualified
                           participants{
                             gamerTag
                             user{

@@ -26,6 +26,9 @@ class DataManager:
     def get_tournaments(self):
         return self._tournament_manager.get_tournaments()
     
+    def get_tournament_tiers(self):
+        return self._tournament_manager.get_tournament_tiers()
+    
     def change_tournament_tier(self, tournament_name, new_tier):
         return self._tournament_manager.change_tournament_tier(tournament_name, new_tier)
     
