@@ -19,22 +19,22 @@ class TournamentFrame(ctk.CTkFrame):
         
     def _show_default_middle_frame(self):
         self.middle_frame.destroy()
-        self._left_frame.button4.configure(state="disabled")
+        self.left_frame.button4.configure(state="disabled")
         self.middle_frame = _DefaultMiddleFrame(self)
     
     def _show_add_tournament_middle_frame(self):
         self.middle_frame.destroy()
-        self._left_frame.button4.configure(state="normal")
+        self.left_frame.button4.configure(state="normal")
         self.middle_frame = _AddTournamentMiddleFrame(self)
         
     def _show_remove_tournament_middle_frame(self):
         self.middle_frame.destroy()
-        self._left_frame.button4.configure(state="normal")
+        self.left_frame.button4.configure(state="normal")
         self.middle_frame = _RemoveTournamentMiddleFrame(self)
     
     def _show_edit_tournament_middle_frame(self):
         self.middle_frame.destroy()
-        self._left_frame.button4.configure(state="normal")
+        self.left_frame.button4.configure(state="normal")
         self.middle_frame = _EditTournamentMiddleFrame(self)
         
     def _reload_right_frame(self):

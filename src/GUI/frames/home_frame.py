@@ -2,6 +2,7 @@ from tkinter import *
 import customtkinter as ctk
 import GUI.window as window
 from ranking.data_manager import DataManager
+from ranking.compute_ranking import compute_ranking
 
 class HomeFrame(ctk.CTkFrame):
     def __init__(self, master, data_manager : DataManager):
@@ -38,7 +39,7 @@ class _LeftFrame(ctk.CTkFrame):
         self.button3 = ctk.CTkButton(self, text="Ranking Rules", command=master.master._show_ranking_rules_frame)
         self.button3.pack(padx=15, pady=10)
         
-        self.button4 = ctk.CTkButton(self, text="Generate Ranking")
+        self.button4 = ctk.CTkButton(self, text="Generate Ranking", command=self.compute_ranking)
         self.button4.pack(padx=15, pady=10)
         
         # Set StartGG developer api key
@@ -63,6 +64,11 @@ class _LeftFrame(ctk.CTkFrame):
     def _save_api_key(self):
         api_key = self.api_key_entry.get()
         self.master.data_manager.save_api_key(api_key)
+        
+    def compute_ranking(self):
+        # Call the compute ranking method
+        compute_ranking(self.master.data_manager)
+        
         
 class _MiddleFrame(ctk.CTkFrame):
     def __init__(self, master):

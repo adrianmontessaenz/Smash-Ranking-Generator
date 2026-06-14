@@ -6,7 +6,12 @@ from ranking.managers.player_manager import PlayerManager
 from ranking.managers.rules_manager import RulesManager
 
 class DataManager:
-    def __init__(self):      
+    def __init__(self):  
+        # Make sure data directory exists. If not, create it.
+        if not os.path.exists("data"):
+            os.makedirs("data")
+        
+        # Load managers            
         self._tournament_manager = _TournamentManager()
         self._player_manager = PlayerManager()
         self._rules_manager = RulesManager()
@@ -60,6 +65,7 @@ class DataManager:
         return self._rules_manager.get_rules() 
     
     
+    # ----------- Get Managers ------------ #
     def get_tournament_manager(self):
         return self._tournament_manager
     

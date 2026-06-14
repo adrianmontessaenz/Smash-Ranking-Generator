@@ -6,6 +6,7 @@ class PlayerManager:
     def __init__(self):
         # Load player data (if any)
         if os.path.exists("data/players.json"):
+            print("Loading player data...")
             with open("data/players.json", "r") as players_file:
                 player_data_json = json.load(players_file)
                 self._players = player_data_json["players"]
@@ -55,7 +56,7 @@ class PlayerManager:
             self._rankings[ranking_name] = new_multiplier
             self._save_data()
             
-    def _save_data(self):
+    def _save_data(self):           
         with open("data/players.json", "w") as players_file:
             json.dump({
                 "players": self._players,

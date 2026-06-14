@@ -28,13 +28,9 @@ class _TournamentManager:
     def save_api_key(self, api_key):
         self._api_key = api_key
         config_data = {"api_key": api_key}
-        
-        # Set up data directory and config file path
-        data_dir = Path("data")
-        config_path = data_dir / "config.json"
+        config_path = Path("data/config.json")
         
         # Save the API key to the config file
-        data_dir.mkdir(exist_ok=True)
         with config_path.open("w") as config_file:
             json.dump(config_data, config_file)
     
@@ -49,9 +45,7 @@ class _TournamentManager:
                 break
         
         # Save updated tournaments data to file
-        data_dir = Path("data")
-        tournaments_path = data_dir / "tournaments.json"
-        data_dir.mkdir(exist_ok=True)
+        tournaments_path = Path("data/tournaments.json")
         with tournaments_path.open("w") as tournaments_file:
             json.dump(self._tournaments, tournaments_file, indent=4)
 
@@ -122,9 +116,7 @@ class _TournamentManager:
         self._tournaments.append(tournament_json_data)
         
         # Save updated tournaments data to file
-        data_dir = Path("data")
-        tournaments_path = data_dir / "tournaments.json"
-        data_dir.mkdir(exist_ok=True)
+        tournaments_path = Path("data/tournaments.json")
         with tournaments_path.open("w") as tournaments_file:
             json.dump(self._tournaments, tournaments_file, indent=4)
 
@@ -136,9 +128,7 @@ class _TournamentManager:
         self._tournaments = [t for t in self._tournaments if t['name'] != tournament_name]
         
         # Save updated tournaments data to file
-        data_dir = Path("data")
-        tournaments_path = data_dir / "tournaments.json"
-        data_dir.mkdir(exist_ok=True)
+        tournaments_path = Path("data/tournaments.json")
         with tournaments_path.open("w") as tournaments_file:
             json.dump(self._tournaments, tournaments_file, indent=4)
 

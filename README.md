@@ -24,3 +24,12 @@ The tool was created to eliminate manual spreadsheet work and provide tournament
 * Retrieving tournament information from Start.gg, handling different data structures, pagination and event-specific information to consistently extract the required ranking data.
 * Supporting customizable tournament tiers, scoring parameters and player weighting systems without requiring code changes for every ranking update.
 * Designing a desktop interface that remained intuitive while exposing a large number of configuration options
+
+## **Development Environment**
+A Docker image is provided to ensure the project can be developed and tested against a consistent Python 3.12 environment regardless of the host operating system.
+To use it, run the following commands:
+
+```bash
+docker build -t smash-ranking-generator .
+docker run --rm smash-ranking-generator
+```
