@@ -25,6 +25,48 @@ The tool was created to eliminate manual spreadsheet work and provide tournament
 * Supporting customizable tournament tiers, scoring parameters and player weighting systems without requiring code changes for every ranking update.
 * Designing a desktop interface that remained intuitive while exposing a large number of configuration options
 
+## **Current Ranking Formula**
+
+### **Tournament Value**
+
+* Each tournament starts with a base value of **5 points per entrant**.
+* Additional value is granted for the presence of ranked players. The sum of all ranked-player bonuses is scaled using a **0.6 exponent** to provide diminishing returns, preventing stacked tournaments from becoming disproportionately valuable.
+* The resulting tournament value is multiplied by the manually assigned **tier multiplier** (A, B, C, etc.).
+
+### **Tournament Performance**
+
+* A player's tournament score is determined by their placement using a placement curve with exponent **k = 1.7**, rewarding higher placements more heavily.
+* Additional placement bonuses are awarded to podium finishes (1st, 2nd and 3rd place).
+
+### **Season Score**
+
+* For each player, only their **four best tournament performances** are considered.
+* These performances are weighted using **[0.4, 0.3, 0.2, 0.1]**.
+* If a player has fewer than four tournaments, the weights are normalized so that the available results receive proportionally higher weight.
+
+### **Head-to-Head Bonus**
+
+* Every win contributes additional value based on the final score of the defeated player.
+* The total head-to-head score is accumulated across the season and added as a bonus to the player's overall score.
+
+### **Final Ranking**
+
+* The final ranking score is obtained by combining:
+
+  * Tournament performance score
+  * Head-to-head bonus
+* Results are exported to an Excel workbook containing the final ranking and several debug sheets with tournament placements and head-to-head data.
+
+### **Design Goals**
+
+The ranking aims to reward:
+
+* Strong placements at valuable tournaments.
+* Consistency across the season.
+* Wins against high-performing players.
+* Participation without turning the ranking into an attendance contest.
+
+
 ## **Development Environment**
 A Docker image is provided to ensure the project can be developed and tested against a consistent Python 3.12 environment regardless of the host operating system.
 To use it, run the following commands:
