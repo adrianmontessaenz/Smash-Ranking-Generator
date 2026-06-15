@@ -1,3 +1,12 @@
+"""Ranking computation and Excel decoration utilities.
+
+This module contains the logic to compute player rankings from
+tournament data and helpers to write and style the resulting Excel
+workbook. The primary entrypoint for application use is
+`compute_ranking(data_manager)` which reads tournaments and players
+from a `DataManager` instance and writes `data/final_ranking.xlsx`.
+"""
+
 from math import sqrt
 from openpyxl import load_workbook
 from openpyxl.styles import PatternFill
@@ -10,12 +19,25 @@ from ranking.data_manager import DataManager
 
 
 def rgb_to_hex(rgb):
+    """Convert an (R, G, B) tuple to an uppercase hex string.
+
+    Args:
+        rgb (tuple[int, int, int]): RGB values in 0-255 range.
+
+    Returns:
+        str: Hex color string like "FFA07A".
+    """
     return "{:02X}{:02X}{:02X}".format(*rgb)
 
 def decorate_placements(sheet):
+    """Adjust column widths for placement-style sheets.
+
+    The function inspects the first row for column names and sets
+    reasonable widths so long tournament/player names are visible.
+    """
     # Set width of columns
     column_names = [cell.value for cell in sheet[1]]
-    max_width = 0    
+    max_width = 0
     for tmp in range(1, sheet.max_column):
         letter = sheet.cell(row=1, column=tmp + 1).column_letter
         length = len(column_names[tmp]) + 4
@@ -23,17 +45,22 @@ def decorate_placements(sheet):
         max_width = length if max_width < length + 2 else max_width
     sheet.column_dimensions['A'].width = max_width
     
-def decorate_h2h(sheet, multiplier):   
+def decorate_h2h(sheet, multiplier):
+    """Adjust column widths and colorize head-to-head cells.
+
+    Numeric cells are colored green for positive values and red for
+    negative values. The `multiplier` controls color intensity scaling.
+    """
     # Set width of columns
     column_names = [cell.value for cell in sheet[1]]
-    max_width = 0    
+    max_width = 0
     for tmp in range(1, sheet.max_column):
         letter = sheet.cell(row=1, column=tmp + 1).column_letter
         length = len(column_names[tmp]) + 4
         sheet.column_dimensions[letter].width = length
         max_width = length if max_width < length + 2 else max_width
     sheet.column_dimensions['A'].width = max_width
-    
+
     # Loop through all rows and columns in the current sheet
     for row in sheet.iter_rows():
         for cell in row:
@@ -55,17 +82,22 @@ def decorate_h2h(sheet, multiplier):
                 cell.fill = fill
 
 def decorate_excel(excel):
+    """Open the workbook at `excel`, adjust formatting, and save it.
+
+    The function modifies placement and head-to-head sheets for
+    human-friendly viewing and saves the workbook in place.
+    """
     # Decorate excel: Set width of columns to see tournament name correctly
     workbook = load_workbook(excel)
-    
+
     # Decorate placements sheets
     decorate_placements(workbook['Tournament Data'])
     decorate_placements(workbook['Final Ranking'])
     decorate_placements(workbook['Player Data'])
-      
+
     # Decorate h2h sheets
     decorate_h2h(workbook['H2H Data'], 25)
-          
+
     # Save the changes
     workbook.save(excel)
     print('Excel has been decorated')
@@ -73,6 +105,14 @@ def decorate_excel(excel):
     
 
 def get_podium_bonus(placement) -> float:
+    """Return a multiplier bonus for podium placements.
+
+    Args:
+        placement (int): Tournament placement (1-based).
+
+    Returns:
+        float: Bonus multiplier (1.25 for 1st, 1.15 for 2nd, etc.).
+    """
     if placement == 1:
         return 1.25
     elif placement == 2:
@@ -83,6 +123,20 @@ def get_podium_bonus(placement) -> float:
         return 1.0
 
 def compute_ranking(data_manager: DataManager):
+    """Compute player rankings from tournaments and write an Excel file.
+
+    The function reads tournament, player and ranking information from
+    `data_manager`, computes per-player scores using a weighted
+    tournament system and head-to-head adjustments, and writes the
+    results to `data/final_ranking.xlsx`. It also calls
+    `decorate_excel` to prettify the workbook.
+
+    Args:
+        data_manager (DataManager): Source of tournaments and players.
+
+    Returns:
+        None
+    """
     # Get the list of tournaments and players from the data manager
     tournaments = data_manager.get_tournaments()
     tiers = data_manager.get_tournament_tiers()

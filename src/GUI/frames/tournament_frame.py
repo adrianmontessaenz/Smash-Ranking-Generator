@@ -1,43 +1,63 @@
+"""Tournament management frames for the GUI.
+
+Provides `TournamentFrame` (top-level) and internal frames used to
+add, remove and edit tournaments. Frames rely on a `DataManager`
+instance for persistence and use small GUI utilities from
+`GUI.utils` for compact displays.
+"""
+
 import tkinter as tk
 import customtkinter as ctk
 import GUI.window as window
 from ranking.data_manager import DataManager
 import GUI.utils as gui_utils
 
+
 class TournamentFrame(ctk.CTkFrame):
-    def __init__(self, master, data_manager : DataManager):
+    """Top-level tournament management frame composed of three columns.
+
+    Args:
+        master: Parent widget (usually the root window).
+        data_manager (DataManager): Provides access to tournaments and tiers.
+    """
+    def __init__(self, master, data_manager: DataManager):
         super().__init__(master)
-        
+
         # Main frame for the tournament frame
         self.pack(fill="both", expand=True)
-        
+
         self.data_manager = data_manager
         # Add frame to the left with buttons
         self.left_frame = _LeftFrame(self)
         self.middle_frame = _DefaultMiddleFrame(self)
         self.right_frame = _RightFrame(self)
-        
+
     def _show_default_middle_frame(self):
+        """Restore the default middle pane and disable the back button."""
         self.middle_frame.destroy()
         self.left_frame.button4.configure(state="disabled")
         self.middle_frame = _DefaultMiddleFrame(self)
-    
+
     def _show_add_tournament_middle_frame(self):
+        """Switch to the Add Tournament pane."""
         self.middle_frame.destroy()
         self.left_frame.button4.configure(state="normal")
         self.middle_frame = _AddTournamentMiddleFrame(self)
-        
+
     def _show_remove_tournament_middle_frame(self):
+        """Switch to the Remove Tournament pane."""
         self.middle_frame.destroy()
         self.left_frame.button4.configure(state="normal")
         self.middle_frame = _RemoveTournamentMiddleFrame(self)
-    
+
     def _show_edit_tournament_middle_frame(self):
+        """Switch to the Edit Tournament pane."""
         self.middle_frame.destroy()
         self.left_frame.button4.configure(state="normal")
         self.middle_frame = _EditTournamentMiddleFrame(self)
-        
+
     def _reload_right_frame(self):
+        """Recreate the right-side summary frame to reflect updates."""
         self.right_frame.destroy()
         self.right_frame = _RightFrame(self)
 

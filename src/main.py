@@ -1,9 +1,35 @@
+"""Smash Ranking Generator — main entrypoint.
+
+This module provides a small CLI test runner (`run_test`) used for
+quick integration checks of the data management and ranking
+computation, and the normal GUI startup when run without the
+`--nogui` flag.
+
+Usage:
+    python -m src.main          # starts the GUI
+    python -m src.main --nogui  # runs `run_test()` smoke tests
+"""
+
 import sys
 import GUI.window as window
 from ranking.data_manager import DataManager
 from ranking.compute_ranking import compute_ranking
 
 def run_test():
+    """Run a quick integration smoke test of data and ranking logic.
+
+    The function initializes a `DataManager`, verifies or sets a
+    StartGG API key, ensures at least one tournament, player and
+    ranking exist for demonstration, and invokes
+    `compute_ranking(data_manager)` to validate ranking computation.
+
+    Side effects:
+        - May modify local data (add test tournament/player/ranking)
+        - Prints status messages to stdout
+
+    Returns:
+        None
+    """
     # Test the DataManager and its managers
     data_manager = DataManager()
     

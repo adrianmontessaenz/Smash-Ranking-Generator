@@ -1,12 +1,32 @@
+"""Tournament manager: fetch, store and manage tournament metadata.
+
+This module provides `_TournamentManager`, a small utility used by
+the higher-level `DataManager` to persist tournament lists, tiers,
+and a StartGG API key. It also contains logic to fetch tournament
+details from the StartGG GraphQL endpoint.
+"""
+
 from gql import Client, gql
 from gql.transport.requests import RequestsHTTPTransport
 from pathlib import Path
 import json
 import os
 
+
 class _TournamentManager:
+    """Manage tournaments, tiers and the StartGG API key.
+
+    The class handles loading and saving `data/tournaments.json` and
+    `data/config.json`, provides simple getters/setters and performs
+    tournament fetching using the StartGG GraphQL API.
+    """
     def __init__(self):
-    # Load tournament data (if any)
+        """Initialize internal state and load persisted data.
+
+        If `data/tournaments.json` does not exist it is created with a
+        sensible default tiers mapping.
+        """
+        # Load tournament data (if any)
         if os.path.exists("data/tournaments.json"):
             with open("data/tournaments.json", "r") as tournaments_file:
                 tournaments_data = json.load(tournaments_file)
@@ -17,7 +37,8 @@ class _TournamentManager:
                 json.dump({"tournaments": [], "tiers": {"SS": 20.0, "S": 15.0, "A": 7.5, "B": 2.5, "C": 1.0, "D": 0.75}}, tournaments_file)
                 self._tournaments = []
                 self._tiers = {"SS": 20.0, "S": 15.0, "A": 7.5, "B": 2.5, "C": 1.0, "D": 0.75}
-    # Load API key from config file if it exists
+
+        # Load API key from config file if it exists
         if os.path.exists("data/config.json"):
             with open("data/config.json", "r") as config_file:
                 config_data = json.load(config_file)
@@ -28,9 +49,15 @@ class _TournamentManager:
     # ------------ Public Methods ------------ #
     # ------------ API Key Methods ------------ #
     def get_api_key(self):
+        """Return the stored StartGG API key (or empty string)."""
         return self._api_key
       
     def save_api_key(self, api_key):
+        """Persist the StartGG API key to `data/config.json`.
+
+        Args:
+            api_key (str): API key to save.
+        """
         self._api_key = api_key
         config_data = {"api_key": api_key}
         config_path = Path("data/config.json")
@@ -41,12 +68,23 @@ class _TournamentManager:
     
     # ------------ Tournament Methods ------------ #
     def get_tournaments(self):
+        """Return the list of stored tournaments."""
         return self._tournaments
 
     def get_tournament_tiers(self):
+        """Return the mapping of tournament tiers to multipliers."""
         return self._tiers
     
     def change_tournament_tier(self, tournament_name, new_tier):
+        """Change the tier for a specific tournament and save changes.
+
+        Args:
+            tournament_name: Tournament name to find.
+            new_tier: New tier value to assign.
+
+        Returns:
+            str: Human-readable status message.
+        """
         for tournament in self._tournaments:
             if tournament['name'] == tournament_name:
                 tournament['tier'] = new_tier
@@ -64,12 +102,21 @@ class _TournamentManager:
         return "Tournament tier updated successfully."
             
     def add_tournament(self, tournament_link, tournament_tier):
+        """Fetch a tournament from StartGG and add it to storage.
+
+        Args:
+            tournament_link (str): URL to the tournament event on StartGG.
+            tournament_tier: Tier to assign to the new tournament.
+
+        Returns:
+            str: Status message describing the outcome.
+        """
         if not self._api_key:
             return "API key not set."
         
         # Logic to add tournament using the provided link
         slugs = tournament_link.split("/")[0:]
-        if slugs[0] == "https:" or slugs[0] == "http:":
+        if slugs[0] == "https:" or slugs[0] == "http":
             slugs = slugs[2:]
         print(slugs)
         tournament_slug = slugs[2]
@@ -139,6 +186,7 @@ class _TournamentManager:
         return "Tournament added successfully."
         
     def remove_tournament(self, tournament_name):
+        """Remove a tournament by name and persist the change."""
         # Logic to remove tournament by name
         self._tournaments = [t for t in self._tournaments if t['name'] != tournament_name]
         
@@ -156,6 +204,18 @@ class _TournamentManager:
     # ------------ Private Methods ------------ #
     
     def _fetch_tournament_data(self, slug, eventSlug) -> dict:
+        """Fetch tournament event data from the StartGG GraphQL API.
+
+        The method pages through entrants until all are retrieved and
+        returns the assembled JSON payload.
+
+        Args:
+            slug (str): Tournament slug.
+            eventSlug (str): Event slug within the tournament.
+
+        Returns:
+            dict: JSON response from the API with all entrants.
+        """
         # Function to fetch tournament data and store it in a JSON file
         # Set up the GraphQL client
         transport = RequestsHTTPTransport(
@@ -203,7 +263,7 @@ class _TournamentManager:
                         }
                       }                
                     }
-                	}
+                 	}
             		}
               }
             }
