@@ -1,5 +1,7 @@
 *.xlsx
 .vscode
 old_data/
+old_app/
 *.json
 __pycache__/
+data/
