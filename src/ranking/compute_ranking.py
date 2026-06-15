@@ -1,11 +1,76 @@
 from math import sqrt
-
+from openpyxl import load_workbook
+from openpyxl.styles import PatternFill
 import pandas as pd
 import json
 import os
 import sys
 
 from ranking.data_manager import DataManager
+
+
+def rgb_to_hex(rgb):
+    return "{:02X}{:02X}{:02X}".format(*rgb)
+
+def decorate_placements(sheet):
+    # Set width of columns
+    column_names = [cell.value for cell in sheet[1]]
+    max_width = 0    
+    for tmp in range(1, sheet.max_column):
+        letter = sheet.cell(row=1, column=tmp + 1).column_letter
+        length = len(column_names[tmp]) + 4
+        sheet.column_dimensions[letter].width = length
+        max_width = length if max_width < length + 2 else max_width
+    sheet.column_dimensions['A'].width = max_width
+    
+def decorate_h2h(sheet, multiplier):   
+    # Set width of columns
+    column_names = [cell.value for cell in sheet[1]]
+    max_width = 0    
+    for tmp in range(1, sheet.max_column):
+        letter = sheet.cell(row=1, column=tmp + 1).column_letter
+        length = len(column_names[tmp]) + 4
+        sheet.column_dimensions[letter].width = length
+        max_width = length if max_width < length + 2 else max_width
+    sheet.column_dimensions['A'].width = max_width
+    
+    # Loop through all rows and columns in the current sheet
+    for row in sheet.iter_rows():
+        for cell in row:
+            if cell.value is None:
+                continue
+            if isinstance(cell.value, int) or isinstance(cell.value, float):
+                cell_value = int(round(cell.value))
+                hex_color = ''
+                if cell.value > 0:
+                    value = 255 - min(cell_value * multiplier, 255)
+                    hex_color = rgb_to_hex((value, 255, value))
+                elif cell.value < 0:
+                    value = 255 - min(abs(cell_value) * multiplier, 255)
+                    hex_color = rgb_to_hex((255, value, value))
+                else:
+                    hex_color = rgb_to_hex((255, 255, 255))
+
+                fill = PatternFill(start_color=hex_color, end_color=hex_color, fill_type="solid")
+                cell.fill = fill
+
+def decorate_excel(excel):
+    # Decorate excel: Set width of columns to see tournament name correctly
+    workbook = load_workbook(excel)
+    
+    # Decorate placements sheets
+    decorate_placements(workbook['Tournament Data'])
+    decorate_placements(workbook['Final Ranking'])
+    decorate_placements(workbook['Player Data'])
+      
+    # Decorate h2h sheets
+    decorate_h2h(workbook['H2H Data'], 25)
+          
+    # Save the changes
+    workbook.save(excel)
+    print('Excel has been decorated')
+    workbook.close()
+    
 
 def get_podium_bonus(placement) -> float:
     if placement == 1:
@@ -64,9 +129,16 @@ def compute_ranking(data_manager: DataManager):
     # Compute final tournament scores for each player based on the top 3 (or 4) tournaments they participated in
     for player_id, player_data in all_player_data.items():
         tournament_scores = list(player_data["tournament_scores"].values())
-        tournament_scores.sort(reverse=True)      
-        weighted_score = sum(score * weight for score, weight in zip(tournament_scores[:4], tournament_weights[:4]))
-        all_player_data[player_id]["final_score"] = weighted_score + player_data["ranking_score"]
+        tournament_scores.sort(reverse=True)
+        top_scores = tournament_scores[:4]  # Get the top 4 scores
+        
+        # Select only the weights for the needed tournaments
+        active_weights = tournament_weights[:len(tournament_scores)]
+        weight_sum = sum(active_weights)
+        normalized_weights = [weight / weight_sum for weight in active_weights]
+        
+        weighted_score = sum(score * weight for score, weight in zip(top_scores, normalized_weights))
+        all_player_data[player_id]["final_score"] = weighted_score
         
     # Compute head-to-head scores for each player based on their wins on the tournament data
     for tournament in tournaments:
@@ -77,7 +149,7 @@ def compute_ranking(data_manager: DataManager):
                 
                 # Don't count head-to-head score if the opponent was disqualified
                 if not opponent["isDisqualified"]:
-                    all_player_data[player_id]["head-to-head-score"] += all_player_data[opponent_id]["final_score"]
+                    all_player_data[player_id]["head-to-head-score"] += all_player_data[opponent_id]["final_score"] + all_player_data[opponent_id]["ranking_score"]
     
     # Compute final scores for each player based on their final score and head-to-head score
     for player_id, player_data in all_player_data.items():
@@ -105,8 +177,62 @@ def compute_ranking(data_manager: DataManager):
         })
         
     ranking_df = pd.DataFrame(ranking_data)
+    
+    # Gather player data for excel sheet
+    player_excel_data = []
+    tournament_excel_data = {}
+    head_to_head_excel_data = {}
+    for player_id, player_data in all_player_data.items():
+        player_excel_data.append({
+            "UserId": player_id,
+            "GamerTag": ", ".join(player_data["gamerTag"])
+        })
+    
+    # Gather tournament and head-to-head data for excel sheet
+    for tournament in tournaments:
+        tournament_name = tournament["name"]
+        for player in tournament.get("player_data", []):
+            player_id = player["userId"]
+            gamer_tag = " / ".join(all_player_data[player_id]["gamerTag"])            
+            if gamer_tag not in tournament_excel_data:
+                tournament_excel_data[gamer_tag] = {}
+            
+            tournament_excel_data[gamer_tag][tournament_name] = player["placement"]
+            
+            for opponent in player["matches"]["wins"]:
+                loser_id = opponent["userId"]
+                loser_tag = " / ".join(all_player_data[loser_id]["gamerTag"])
+                
+                if gamer_tag not in head_to_head_excel_data:
+                    head_to_head_excel_data[gamer_tag] = {}
+                
+                head_to_head_excel_data[gamer_tag][loser_tag] = (
+                    head_to_head_excel_data[gamer_tag].get(loser_tag, 0) + 1
+                )
+                
+            
+    # Add data to the excel sheets
+    player_df = pd.DataFrame(player_excel_data)
+    tournament_df = pd.DataFrame.from_dict(tournament_excel_data, orient="index")
+    tournament_df.index.name = "Player"
+    tournament_df.reset_index(inplace=True)
+    tournament_df.fillna(0, inplace=True)
+    
+    head_to_head_df = pd.DataFrame.from_dict(head_to_head_excel_data, orient="index")
+    head_to_head_df.fillna(0, inplace=True)
+    all_players = sorted(set(head_to_head_df.index).union(head_to_head_df.columns))
+    head_to_head_df = head_to_head_df.reindex(index=all_players,columns=all_players,fill_value=0)
+    head_to_head_df.index.name = "Player"
+    head_to_head_df.reset_index(inplace=True)
+    
+    # Save data on excel
     with pd.ExcelWriter('data/final_ranking.xlsx', engine='openpyxl', mode='w') as writer:
+        player_df.to_excel(writer, sheet_name='Player Data', index=False)
+        tournament_df.to_excel(writer, sheet_name='Tournament Data', index=False)
+        head_to_head_df.to_excel(writer, sheet_name='H2H Data', index=False)
         ranking_df.to_excel(writer, sheet_name='Final Ranking', index=False)
+    
+    decorate_excel('data/final_ranking.xlsx')
     
         
             
